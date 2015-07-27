@@ -13,7 +13,7 @@ public class Selen {
 	}
 	public static <P extends Selen.Page> P newPage(Class<P> pcls, WebDriver driver, String url) {
 		try {
-			return pcls.newInstance().init(driver, url);
+			return pcls.newInstance().bind(driver, url);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

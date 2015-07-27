@@ -14,7 +14,7 @@ public abstract class SelenPage {
 	private boolean initialized = false;
 
 	@SuppressWarnings("unchecked")
-	final <P extends Selen.Page> P init (WebDriver driver, String url) {
+	final <P extends Selen.Page> P bind (WebDriver driver, String url) {
 		if (!initialized) {
 			initialized = true;
 			this.driver = driver;
