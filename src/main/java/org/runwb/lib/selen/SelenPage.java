@@ -3,6 +3,8 @@ package org.runwb.lib.selen;
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.runwb.lib.selen.Selen.Obj;
 
@@ -61,5 +63,8 @@ public abstract class SelenPage {
 	public void highlightObjs() {
 		for (Selen.Obj o : objs().values())
 			o.highlightObj();
+	}
+	public static Selen.Obj obj(By by) {
+		return Selen.obj(by);
 	}
 }
