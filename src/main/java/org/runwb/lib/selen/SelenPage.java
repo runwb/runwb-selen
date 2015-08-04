@@ -6,20 +6,29 @@ import java.util.Map;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.runwb.lib.selen.Selen.Obj;
+import org.openqa.selenium.WebElement;
+import org.runwb.lib.selen.Selen.Page;
 
 public abstract class SelenPage {
+	
+	public class Obj extends SelenObj {
+		public Obj(By by) { super(by); }
+		public Obj(WebElement elem) { super(elem); }
+
+		@Override public Page page() {
+			return (Page) SelenPage.this;
+		}
+	}
+	
 	public WebDriver driver;
 	public String url;
 	public String name;
 	public boolean highlightObj = false;
-	private boolean initialized = false;
+	private boolean bound = false;
 
-	@SuppressWarnings("unchecked")
-	final <P extends Selen.Page> P bind (WebDriver driver, String url) {
-		if (!initialized) {
-			initialized = true;
-			this.driver = driver;
+	final void bind (String url) {
+		if (!bound) {
+			bound = true;
 			this.url = url;
 			if (name == null)
 				name = getClass().getSimpleName();
@@ -30,15 +39,18 @@ public abstract class SelenPage {
 			long start = System.currentTimeMillis();
 			try {
 				for (Field f : getClass().getFields())
-					if (f.getType().isAssignableFrom(Selen.Obj.class)) {
-						Selen.Obj o = (Obj) f.get(this);
+					if (f.getType().isAssignableFrom(Selen.Page.Obj.class)) {
+						Selen.Page.Obj o = (Selen.Page.Obj) f.get(this);
 						if (o != null) {
-							long startObj = System.currentTimeMillis();
-							System.out.print("Obj:" + f.getName() + " - looking for... ");
-							o.elem = driver.findElement(o.by);
 							o.name = f.getName();
-							o.pg = (Selen.Page) this;
-							System.out.println("found after " + ((float)(System.currentTimeMillis() - startObj) / 1000) + "s");
+							if (o.late == null || o.late == false) {
+								long startObj = System.currentTimeMillis();
+								System.out.print("Obj:" + f.getName() + " - looking for... ");
+								o.elem = driver.findElement(o.by);
+								if (o.elem instanceof Page.NullObj)
+									throw ((Page.NullObj) o.elem).exception;
+								System.out.println("found after " + ((float)(System.currentTimeMillis() - startObj) / 1000) + "s");
+							}
 						}
 					}
 			} catch (Exception e) {
@@ -46,14 +58,13 @@ public abstract class SelenPage {
 			}
 			System.out.println("Page:" + this.name + " - loaded after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
 		}
-		return (P)this;
 	}
-	public Map<String, Selen.Obj> objs() {
+	public Map<String, Selen.Page.Obj> objs() {
 		try {
-			Map<String, Selen.Obj> objs = new LinkedHashMap<>();
+			Map<String, Selen.Page.Obj> objs = new LinkedHashMap<>();
 			for(Field field : getClass().getFields())
-				if (field.getType().isAssignableFrom(Selen.Obj.class))
-					objs.put(field.getName(), (Selen.Obj) field.get(this));
+				if (field.getType().isAssignableFrom(Selen.Page.Obj.class))
+					objs.put(field.getName(), (Selen.Page.Obj) field.get(this));
 			return objs;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -61,10 +72,15 @@ public abstract class SelenPage {
 	}
 	
 	public void highlightObjs() {
-		for (Selen.Obj o : objs().values())
+		for (Page.Obj o : objs().values())
 			o.highlightObj();
 	}
-	public static Selen.Obj obj(By by) {
-		return Selen.obj(by);
+	public Page.Obj obj(By by) {
+		return ((Selen.Page)this).new Obj(by);
+	}
+	public Selen.Page.Obj late(By by) {
+		Page.Obj obj = ((Page)this).new Obj(by);
+		obj.late = true;
+		return obj;
 	}
 }
