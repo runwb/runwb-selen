@@ -6,25 +6,16 @@ import java.util.Map;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.runwb.lib.selen.Selen.Page;
 
 public abstract class SelenPage {
-	
-	public class Obj extends SelenObj {
-		public Obj(By by) { super(by); }
-		public Obj(WebElement elem) { super(elem); }
-
-		@Override public Page page() {
-			return (Page) SelenPage.this;
-		}
-	}
 	
 	public WebDriver driver;
 	public String url;
 	public String name;
 	public boolean highlightObj = false;
 	private boolean bound = false;
+	public final Ready ready = new Ready();
 
 	final void bind (String url) {
 		if (!bound) {
@@ -37,25 +28,28 @@ public abstract class SelenPage {
 			System.out.println();
 			System.out.println("Page:" + this.name + " - checking on page");
 			long start = System.currentTimeMillis();
+			Selen.Page.Obj o = null;
 			try {
 				for (Field f : getClass().getFields())
 					if (f.getType().isAssignableFrom(Selen.Page.Obj.class)) {
-						Selen.Page.Obj o = (Selen.Page.Obj) f.get(this);
-						if (o != null) {
+						o = (Selen.Page.Obj) f.get(this);
+						if (o != null)
 							o.name = f.getName();
-							if (o.late == null || o.late == false) {
-								long startObj = System.currentTimeMillis();
-								System.out.print("Obj:" + f.getName() + " - looking for... ");
-								o.elem = driver.findElement(o.by);
-								if (o.elem instanceof Page.NullObj)
-									throw ((Page.NullObj) o.elem).exception;
-								System.out.println("found after " + ((float)(System.currentTimeMillis() - startObj) / 1000) + "s");
-							}
-						}
+					}
+				for (Field f : getClass().getFields())
+					if (f.getType().isAssignableFrom(Selen.Page.Obj.class)) {
+						o = (Selen.Page.Obj) f.get(this);
+						if (o != null)
+							if (o.late == null || o.late == false)
+								o.bind();
 					}
 			} catch (Exception e) {
-				throw new RuntimeException(e);
+				throw new Selen.Xn("page not loading with expected obj: " + o, e);
 			}
+			if (ready.check != null)
+				if (!ready.waitFor())
+					throw new Selen.Xn("page not ready after timeout of: " + ((float)ready.timeout) + "s");
+				
 			System.out.println("Page:" + this.name + " - loaded after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
 		}
 	}
@@ -75,11 +69,16 @@ public abstract class SelenPage {
 		for (Page.Obj o : objs().values())
 			o.highlightObj();
 	}
-	public Page.Obj obj(By by) {
-		return ((Selen.Page)this).new Obj(by);
-	}
-	public Selen.Page.Obj late(By by) {
-		Page.Obj obj = ((Page)this).new Obj(by);
+	public Page.Obj obj(By by) { return obj(null, by, null); }
+	public Page.Obj obj(Page.Obj container, By by) { return obj(container, by, null); }
+	public Page.Obj obj(By by, Page.Obj.MultiChoose multiChoose) { return obj(null, by, multiChoose); }
+	public Page.Obj obj(Page.Obj container, By by, Page.Obj.MultiChoose multiChoose) { return ((Selen.Page)this).new Obj(container, by, multiChoose); }
+
+	public Selen.Page.Obj late(By by) { return late(null, by, null); }
+	public Selen.Page.Obj late(Page.Obj container, By by) { return late(container, by, null); }
+	public Selen.Page.Obj late(By by, Page.Obj.MultiChoose multiChoose) { return late(null, by, multiChoose); }
+	public Selen.Page.Obj late(Page.Obj container, By by, Page.Obj.MultiChoose multiChoose) {
+		Page.Obj obj = obj(container, by, multiChoose);
 		obj.late = true;
 		return obj;
 	}

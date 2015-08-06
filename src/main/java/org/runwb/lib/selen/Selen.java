@@ -9,7 +9,7 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 public class Selen extends SelenSelen {
 	public static abstract class Page extends SelenPage {
 		public class Obj extends SelenObj {
-			public Obj(By by) { super(by); }
+			public Obj(Obj container, By by, Obj.MultiChoose multiChoose) { super(container, by, multiChoose); }
 			public Obj(WebElement elem) { super(elem); }
 			@Override public Page page() {
 				return Page.this;
@@ -34,5 +34,26 @@ public class Selen extends SelenSelen {
 	}
 	public Selen (WebDriver driver) {
 		super(driver);
+	}
+	@SuppressWarnings("serial")
+	public static class Xn extends RuntimeException {
+
+		public Xn() { super(); }
+
+		public Xn(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+			super(message, cause, enableSuppression, writableStackTrace);
+		}
+
+		public Xn(String message, Throwable cause) {
+			super(message, cause);
+		}
+
+		public Xn(String message) {
+			super(message);
+		}
+
+		public Xn(Throwable cause) {
+			super(cause);
+		}
 	}
 }

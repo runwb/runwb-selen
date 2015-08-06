@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.HasInputDevices;
@@ -23,18 +24,14 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 	public class Timeout {
 		Deque<Integer> stack = new LinkedList<>();
 		int cur = 30;
-		{
-			stack.push(cur);
-		}
 		public void pop() {
-			stack.pop();
-			cur = stack.peek();
+			cur = stack.pop();
 			driver.manage().timeouts().implicitlyWait(cur, TimeUnit.SECONDS);
 			
 		}
 		public void push(int seconds) {
+			stack.push(cur);
 			cur = seconds;
-			stack.push(seconds);
 			driver.manage().timeouts().implicitlyWait(cur, TimeUnit.SECONDS);
 		}
 	}
@@ -47,29 +44,31 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 	
 	public void driver(WebDriver driver) {
 		this.driver = driver;
-		this.driver.manage().timeouts().implicitlyWait(timeout.stack.peek(), TimeUnit.SECONDS);
+		this.driver.manage().timeouts().implicitlyWait(timeout.cur, TimeUnit.SECONDS);
 	}
 	
-	public WebElement findElement(Integer timeout, By by) {
+	public Page.Obj findElement(Integer timeout, By by) {
 		if (timeout != null)
 			this.timeout.push(timeout);
-		WebElement res = null;
-		try {
-			res = driver.findElement(by);
-		} catch (Exception e) {
-			res = null;
-		}
+		Page.Obj obj = findElement(by);
 		if (timeout != null)
 			this.timeout.pop();
-		return res;
+		return obj;
 	}
-	public <P extends Page> P bindPage(Class<P> pageCls) {
-		return bindPage(pageCls, null);
+	public void bindPage(Page p) { bindPage(p, null); }
+	@SuppressWarnings("unchecked")
+	public void bindPage(Page p, String url) {
+		p.driver = this;
+		p.bind(url);
+		Class<? extends Page> pCsl = p.getClass();
+		while (pCsl.isAnonymousClass())
+			pCsl = (Class<? extends Page>) pCsl.getSuperclass();
+		pages.put(pCsl, p);
 	}
-	public <P extends Page> P bindPage(Class<P> pageCls, String url) {
-		P p = Selen.newPage(pageCls, this, url);
-		pages.put(pageCls, p);
-		return p;
+
+	public void bindPage(Class<? extends Page> pageCls) { bindPage(pageCls, null); }
+	public void bindPage(Class<? extends Page> pageCls, String url) {
+		bindPage(Selen.newPage(pageCls, this, url));
 	}
 	@SuppressWarnings("unchecked")
 	public <P extends Page> P page(Class<P> pageCls) {
@@ -77,7 +76,14 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 	}
 	
 	@Override public void close() { driver.close(); }
-	@Override public WebElement findElement(By arg0) { return driver.findElement(arg0); }
+	@Override public Page.Obj findElement(By arg0) {
+		try {
+			WebElement e = driver.findElement(arg0);
+			return new Page(){}.new Obj(e);
+		} catch (NoSuchElementException e) {
+			return new Page(){}.new NullObj(e);
+		}
+	}
 	@Override public List<WebElement> findElements(By arg0) { return driver.findElements(arg0); }
 	@Override public void get(String arg0) { driver.get(arg0); }
 	@Override public String getCurrentUrl() { return driver.getCurrentUrl(); }

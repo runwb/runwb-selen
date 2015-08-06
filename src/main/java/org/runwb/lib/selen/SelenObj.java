@@ -10,38 +10,71 @@ import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.interactions.internal.Coordinates;
 import org.openqa.selenium.internal.Locatable;
 import org.runwb.lib.selen.Selen.Page;
+import org.runwb.lib.selen.Selen.Page.Obj;
 
 public abstract class SelenObj implements WebElement, Locatable {
 	public abstract Selen.Page page();
 	WebElement elem;
+	boolean bound = false;
 	public WebElement elem() {
-		if (late != null && late == true) {
-			late = false;
-			WebElement e = page().driver.findElement(by);
-			if (e instanceof Page.NullObj)
-				throw ((Page.NullObj) elem).exception;
-			if (e instanceof Page.Obj)
-				e = ((Page.Obj) e).elem;
-			elem = e;
-		}
+		if (!bound)
+			bind();
 		return elem;
+	}
+	public boolean bound() { return bound; }
+
+	public void bind() {
+		if (bound)
+			return;
+		bound = true;
+		if (elem != null)
+			return;
+		long start = System.currentTimeMillis();
+		System.out.println("Obj:" + name + " - finding... ");
+		WebElement e;
+		if (container == null)
+			if (multiChoose == null)
+				e = page().driver.findElement(by);
+			else
+				e = multiChoose.pick(page().driver.findElements(by));
+		else
+			if (multiChoose == null)
+				e = container.findElement(by);
+			else
+				e = multiChoose.pick(container.findElements(by));
+		if (e instanceof Page.NullObj)
+			throw ((Page.NullObj) elem).exception;
+		if (e instanceof Page.Obj)
+			e = ((Page.Obj) e).elem;
+		elem = e;
+		System.out.println("Obj:" + name + " - found after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
 	}
 	public String name;
 	public final By by;
+	public interface MultiChoose {
+		WebElement pick(List<WebElement> elems);
+	}
+	public final MultiChoose multiChoose;
+	public final Obj container;
 	Boolean late = null;
-	public SelenObj(By by) {
-		this.by = by;
-	}
+
 	public SelenObj(WebElement elem) {
+		this(null, null, null);
 		this.elem = elem;
-		by = null;
 	}
-	
+
+	public SelenObj(Obj container, By by, MultiChoose multichoose) {
+		this.container = container;
+		this.by = by;
+		this.multiChoose = multichoose;
+	}
+
 	public void type(String txt) {
 		if (page().highlightObj)
 			highlightObj();
@@ -84,14 +117,27 @@ public abstract class SelenObj implements WebElement, Locatable {
 	
 	
 	@Override public void clear() { elem().clear(); }
-	@Override public Selen.Page.Obj findElement(By arg0) {
+	
+	@Override public Page.Obj findElement(By arg0) {
 		try {
-			WebElement e = elem().findElement(arg0);
-			return page().new Obj(e);
+			return page().new Obj(elem().findElement(arg0));
 		} catch (NoSuchElementException e) {
 			return page().new NullObj(e);
 		}
 	}
+	public Page.Obj findElement(Integer timeout, By arg0) {
+		WebDriver driver = page().driver;
+		Selen selen = null;
+		if (driver instanceof Selen)
+			selen = (Selen) driver;
+		if (timeout != null && selen != null)
+			selen.timeout.push(timeout);
+		Page.Obj obj = findElement(arg0);
+		if (timeout != null && selen != null)
+			selen.timeout.pop();
+		return obj;
+	}
+
 	@Override public List<WebElement> findElements(By arg0) {
 		List<WebElement> list = elem().findElements(arg0);
 		if (list == null)
@@ -114,4 +160,13 @@ public abstract class SelenObj implements WebElement, Locatable {
 	@Override public void submit() { elem().submit(); }
 
 	@Override public Coordinates getCoordinates() { return ((Locatable) elem()).getCoordinates(); }
+	
+	@Override public String toString() {
+		StringBuilder sb = new StringBuilder();
+		if (name != null)
+			sb.append("name: " + name + "; ");
+		if (by != null)
+			sb.append("by: " + by + "; ");
+		return sb.toString();
+	}
 }
