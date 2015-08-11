@@ -41,19 +41,33 @@ public abstract class SelenObj implements WebElement, Locatable {
 		if (container == null)
 			if (multiChoose == null)
 				e = page().driver.findElement(by);
-			else
-				e = multiChoose.pick(page().driver.findElements(by));
+			else {
+				List<WebElement> candidates = page().driver.findElements(by);
+				if (candidates.size() > 0)
+					e = multiChoose.pick(candidates);
+				else
+					e = page().new NullObj(null);
+			}
 		else
 			if (multiChoose == null)
 				e = container.findElement(by);
-			else
-				e = multiChoose.pick(container.findElements(by));
+			else {
+				List<WebElement> candidates = container.findElements(by);
+				if (candidates.size() > 0)
+					e = multiChoose.pick(candidates);
+				else
+					e = page().new NullObj(null);
+			}
 		if (e instanceof Page.NullObj)
-			throw ((Page.NullObj) elem).exception;
-		if (e instanceof Page.Obj)
+			e = null;
+//			throw ((Page.NullObj) elem).exception;
+		else if (e instanceof Page.Obj)
 			e = ((Page.Obj) e).elem;
 		elem = e;
-		System.out.println("Obj:" + name + " - found after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
+		if (e != null)
+			System.out.println("Obj:" + name + " - found after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
+		else
+			System.out.println("Obj:" + name + " - not found after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
 	}
 	public String name;
 	public final By by;
@@ -106,7 +120,7 @@ public abstract class SelenObj implements WebElement, Locatable {
 	}
 
 	public boolean isNull() {
-		return isNull(this);
+		return isNull(this) || elem() == null;
 	}
 	public NoSuchElementException getNotFoundException() {
 		return isNull() ? ((Page.NullObj) this).exception : null;

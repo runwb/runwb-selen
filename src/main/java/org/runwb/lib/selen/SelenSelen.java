@@ -21,18 +21,30 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 	public WebDriver driver;
 	Map<Class<? extends Page>, Page> pages = new LinkedHashMap<>();
 	
+	public static interface Closed { void run(); }
 	public class Timeout {
 		Deque<Integer> stack = new LinkedList<>();
 		int cur = 30;
 		public void pop() {
 			cur = stack.pop();
 			driver.manage().timeouts().implicitlyWait(cur, TimeUnit.SECONDS);
-			
 		}
 		public void push(int seconds) {
 			stack.push(cur);
 			cur = seconds;
 			driver.manage().timeouts().implicitlyWait(cur, TimeUnit.SECONDS);
+		}
+		public void oneoff(int seconds, Closed exec) {
+			stack.push(seconds);
+			Exception hold = null;
+			try {
+				exec.run();
+			} catch (Exception e) {
+				hold = e;
+			}
+			stack.pop();
+			if (hold != null)
+				throw new RuntimeException(hold);
 		}
 	}
 	public Timeout timeout = new Timeout();
