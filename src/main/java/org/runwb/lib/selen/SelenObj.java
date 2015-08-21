@@ -21,6 +21,11 @@ import org.runwb.lib.selen.Selen.Page.Obj;
 public abstract class SelenObj implements WebElement, Locatable {
 	public abstract Selen.Page page();
 	WebElement elem;
+	NoSuchElementException noElemXn;
+	public NoSuchElementException noElemXn() {
+		elem();
+		return noElemXn;
+	}
 	boolean bound = false;
 	public WebElement elem() {
 		if (!bound)
@@ -33,8 +38,10 @@ public abstract class SelenObj implements WebElement, Locatable {
 		if (bound)
 			return;
 		bound = true;
-		if (elem != null)
+		if (elem != null) {
+			bound = true;
 			return;
+		}
 		long start = System.currentTimeMillis();
 		System.out.println("Obj:" + name + " - finding... ");
 		WebElement e;
@@ -58,8 +65,10 @@ public abstract class SelenObj implements WebElement, Locatable {
 				else
 					e = page().new NullObj(null);
 			}
-		if (e instanceof Page.NullObj)
+		if (e instanceof Page.NullObj) {
+			noElemXn = ((Page.NullObj) e).noElemXn;
 			e = null;
+		}
 //			throw ((Page.NullObj) elem).exception;
 		else if (e instanceof Page.Obj)
 			e = ((Page.Obj) e).elem;
@@ -123,7 +132,7 @@ public abstract class SelenObj implements WebElement, Locatable {
 		return isNull(this) || elem() == null;
 	}
 	public NoSuchElementException getNotFoundException() {
-		return isNull() ? ((Page.NullObj) this).exception : null;
+		return isNull() ? ((Page.NullObj) this).noElemXn : null;
 	}
 	public void mouseTo() {
 		new Actions(page().driver).moveToElement(this).perform();

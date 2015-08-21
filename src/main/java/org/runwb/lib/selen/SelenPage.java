@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.runwb.lib.selen.Selen.Page;
 
@@ -40,8 +41,12 @@ public abstract class SelenPage {
 					if (f.getType().isAssignableFrom(Selen.Page.Obj.class)) {
 						o = (Selen.Page.Obj) f.get(this);
 						if (o != null)
-							if (o.late == null || o.late == false)
+							if (o.late == null || o.late == false) {
 								o.bind();
+								NoSuchElementException noElemXn = o.noElemXn();
+								if (o.noElemXn() != null)
+									throw noElemXn;
+							}
 					}
 			} catch (Exception e) {
 				throw new Selen.Xn("page not loading with expected obj: " + o, e);

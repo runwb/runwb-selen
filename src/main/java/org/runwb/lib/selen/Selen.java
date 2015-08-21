@@ -16,10 +16,10 @@ public class Selen extends SelenSelen {
 			}
 		}
 		public class NullObj extends Obj {
-			public final NoSuchElementException exception;
+			public final NoSuchElementException noElemXn;
 			public NullObj(NoSuchElementException exception) {
 				super((WebElement) null);
-				this.exception = exception;
+				this.noElemXn = exception;
 			}
 		}
 	}
