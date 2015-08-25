@@ -10,7 +10,7 @@ public class Selen extends SelenSelen {
 	public static abstract class Page extends SelenPage {
 		public class Obj extends SelenObj {
 			public Obj(Obj container, By by, Obj.MultiChoose multiChoose) { super(container, by, multiChoose); }
-			public Obj(WebElement elem) { super(elem); }
+			public Obj(WebElement elem, By by) { super(elem, by); }
 			@Override public Page page() {
 				return Page.this;
 			}
@@ -18,7 +18,7 @@ public class Selen extends SelenSelen {
 		public class NullObj extends Obj {
 			public final NoSuchElementException noElemXn;
 			public NullObj(NoSuchElementException exception) {
-				super((WebElement) null);
+				super((WebElement) null, null);
 				this.noElemXn = exception;
 			}
 		}

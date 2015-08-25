@@ -20,7 +20,8 @@ import org.runwb.lib.selen.Selen.Page;
 public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputDevices {
 	public WebDriver driver;
 	Map<Class<? extends Page>, Page> pages = new LinkedHashMap<>();
-	
+
+	Play play = new Play();
 	public static interface Closed { void run(); }
 	public class Timeout {
 		Deque<Integer> stack = new LinkedList<>();
@@ -91,7 +92,7 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 	@Override public Page.Obj findElement(By arg0) {
 		try {
 			WebElement e = driver.findElement(arg0);
-			return new Page(){}.new Obj(e);
+			return new Page(){}.new Obj(e, arg0);
 		} catch (NoSuchElementException e) {
 			return new Page(){}.new NullObj(e);
 		}

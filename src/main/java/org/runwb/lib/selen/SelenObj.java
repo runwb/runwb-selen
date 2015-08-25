@@ -34,6 +34,27 @@ public abstract class SelenObj implements WebElement, Locatable {
 	}
 	public boolean bound() { return bound; }
 
+	void action() {
+		elem();
+		WebDriver wd = page().driver;
+		if (wd instanceof Selen) {
+			Selen selen = (Selen) wd;
+			if (selen.play.paused()) {
+				String nm;
+				if (this.name != null)
+					nm = this.name;
+				else if (by != null)
+					nm = by.toString();
+				else
+					nm = elem.toString();
+				System.out.println("\"" + nm + "\" action paused...");
+				System.out.println(Thread.currentThread().getStackTrace()[3]);
+				selen.play.proceed();
+				System.out.println("\"" + nm + "\" action continue");
+			}
+		}
+	}
+
 	public void bind() {
 		if (bound)
 			return;
@@ -87,8 +108,8 @@ public abstract class SelenObj implements WebElement, Locatable {
 	public final Obj container;
 	Boolean late = null;
 
-	public SelenObj(WebElement elem) {
-		this(null, null, null);
+	public SelenObj(WebElement elem, By by) {
+		this(null, by, null);
 		this.elem = elem;
 	}
 
@@ -99,6 +120,7 @@ public abstract class SelenObj implements WebElement, Locatable {
 	}
 
 	public void type(String txt) {
+		action();
 		if (page().highlightObj)
 			highlightObj();
 		System.out.println("Obj:" + name + " - about to type " + txt);
@@ -106,6 +128,7 @@ public abstract class SelenObj implements WebElement, Locatable {
 		elem().sendKeys(txt);
 	}
 	public void click() {
+		action();
 		if (page().highlightObj)
 			highlightObj();
 		elem().click();
@@ -138,12 +161,9 @@ public abstract class SelenObj implements WebElement, Locatable {
 		new Actions(page().driver).moveToElement(this).perform();
 	}
 	
-	
-	@Override public void clear() { elem().clear(); }
-	
 	@Override public Page.Obj findElement(By arg0) {
 		try {
-			return page().new Obj(elem().findElement(arg0));
+			return page().new Obj(elem().findElement(arg0), arg0);
 		} catch (NoSuchElementException e) {
 			return page().new NullObj(e);
 		}
@@ -167,7 +187,7 @@ public abstract class SelenObj implements WebElement, Locatable {
 			return null;
 		List<WebElement> newList = new ArrayList<>();
 		for (WebElement e : list)
-			newList.add(page().new Obj(e));
+			newList.add(page().new Obj(e, arg0));
 		return newList;
 	}
 	@Override public String getAttribute(String arg0) { return elem().getAttribute(arg0); }
@@ -179,8 +199,9 @@ public abstract class SelenObj implements WebElement, Locatable {
 	@Override public boolean isDisplayed() { return elem().isDisplayed(); }
 	@Override public boolean isEnabled() { return elem().isEnabled(); }
 	@Override public boolean isSelected() { return elem().isSelected(); }
-	@Override public void sendKeys(CharSequence... arg0) { elem().sendKeys(arg0); }
-	@Override public void submit() { elem().submit(); }
+	@Override public void clear() { action(); elem().clear(); }
+	@Override public void sendKeys(CharSequence... arg0) { action(); elem().sendKeys(arg0); }
+	@Override public void submit() { action(); elem().submit(); }
 
 	@Override public Coordinates getCoordinates() { return ((Locatable) elem()).getCoordinates(); }
 	
