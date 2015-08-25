@@ -1,5 +1,6 @@
 package org.runwb.lib.selen;
 
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
@@ -27,10 +28,12 @@ public class Play extends JFrame {
 	public static final String PAUSE = "Pause";
 	public static final String RESUME = "Resume";
 	public static final String STEP = "Step";
+	public static final String KILL = "Kill";
 	static final int XL = 150, YL = 50; 
 	public AtomicBoolean debug = new AtomicBoolean(false);
-	JButton run = new JButton();
-	JButton step = new JButton();
+	JButton run = new JButton(PAUSE);
+	JButton step = new JButton(STEP);
+	JButton kill = new JButton(KILL);
 	Thread daemon = new Thread(){
 		{
 			setName(Play.class.getSimpleName() + " daemon thread");
@@ -84,6 +87,9 @@ public class Play extends JFrame {
 				run.setEnabled(false);
 				step();
 				run.setEnabled(true);
+			}
+			else if (e.getSource().equals(kill)) {
+				System.exit(-1);
 			}
 		}
 	};
@@ -159,13 +165,13 @@ public class Play extends JFrame {
 	    	loc.y = bound.y + 50;
 	    }
 		
-		run.setText("Pause");
 		run.setPreferredSize(new Dimension(XL, YL));
 		run.addActionListener(action);
-		step.setText(STEP);
 		step.setPreferredSize(new Dimension(XL, YL));
 		step.addActionListener(action);
 		step.setEnabled(false);
+//		kill.setPreferredSize(new Dimension(XL / 2, YL / 2));
+		kill.addActionListener(action);
 
 		setTitle("RWB Task - Batch Run");
 		setResizable(false);
@@ -173,6 +179,7 @@ public class Play extends JFrame {
 		add(buttons);
 		buttons.add(run);
 		buttons.add(step);
+		add(kill, BorderLayout.NORTH);
 		
 		pack();
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -195,6 +202,7 @@ public class Play extends JFrame {
 		daemon.start();
 		setLocation(loc);
 		setVisible(true);
+		setAlwaysOnTop(true);
 		try {
 			FileUtils.write(config, loc.x + ", " + loc.y);
 		} catch (IOException e1) {

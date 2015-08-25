@@ -21,7 +21,7 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 	public WebDriver driver;
 	Map<Class<? extends Page>, Page> pages = new LinkedHashMap<>();
 
-	Play play = new Play();
+	public Play play = new Play();
 	public static interface Closed { void run(); }
 	public class Timeout {
 		Deque<Integer> stack = new LinkedList<>();
