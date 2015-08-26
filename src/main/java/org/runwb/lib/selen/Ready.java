@@ -3,6 +3,7 @@ package org.runwb.lib.selen;
 import java.util.function.BooleanSupplier;
 
 public class Ready {
+	/**timeout in seconds*/
 	public double timeout = 30;
 	public double retry = 0.25;
 	public BooleanSupplier check = null;

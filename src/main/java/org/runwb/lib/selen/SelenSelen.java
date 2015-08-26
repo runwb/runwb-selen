@@ -1,5 +1,7 @@
 package org.runwb.lib.selen;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -10,8 +12,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.OutputType;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.interactions.HasInputDevices;
 import org.openqa.selenium.interactions.Keyboard;
 import org.openqa.selenium.interactions.Mouse;
@@ -111,4 +115,9 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 
 	@Override public Keyboard getKeyboard() { return ((HasInputDevices) driver).getKeyboard(); }
 	@Override public Mouse getMouse() { return ((HasInputDevices) driver).getMouse(); }
+	
+	public InputStream getScreenshot() {
+		byte[] s = ((FirefoxDriver)driver).getScreenshotAs(OutputType.BYTES);
+		return new ByteArrayInputStream(s);
+	}
 }
