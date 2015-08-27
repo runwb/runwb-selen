@@ -126,14 +126,14 @@ public abstract class SelenObj implements WebElement, Locatable {
 		if (page().highlightObj)
 			highlightObj();
 		System.out.println("Obj:" + name + " - about to type " + txt);
-		elem().clear();
-		elem().sendKeys(txt);
+		elem.clear();
+		elem.sendKeys(txt);
 	}
 	public void click() {
 		action();
 		if (page().highlightObj)
 			highlightObj();
-		elem().click();
+		elem.click();
 		System.out.println("Obj:" + name + " - about to click it");
 	}
 	public void highlightObj() {
@@ -201,9 +201,9 @@ public abstract class SelenObj implements WebElement, Locatable {
 	@Override public boolean isDisplayed() { return elem().isDisplayed(); }
 	@Override public boolean isEnabled() { return elem().isEnabled(); }
 	@Override public boolean isSelected() { return elem().isSelected(); }
-	@Override public void clear() { action(); elem().clear(); }
-	@Override public void sendKeys(CharSequence... arg0) { action(); elem().sendKeys(arg0); }
-	@Override public void submit() { action(); elem().submit(); }
+	@Override public void clear() { action(); elem.clear(); }
+	@Override public void sendKeys(CharSequence... arg0) { action(); elem.sendKeys(arg0); }
+	@Override public void submit() { action(); elem.submit(); }
 
 	@Override public Coordinates getCoordinates() { return ((Locatable) elem()).getCoordinates(); }
 	
