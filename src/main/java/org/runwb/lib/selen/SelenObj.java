@@ -52,6 +52,8 @@ public abstract class SelenObj implements WebElement, Locatable {
 				selen.play.proceed();
 				System.out.println("\"" + nm + "\" action continue");
 			}
+			else
+				selen.play.proceed();
 		}
 	}
 

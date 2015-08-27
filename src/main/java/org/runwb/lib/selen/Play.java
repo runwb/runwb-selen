@@ -102,6 +102,11 @@ public class Play extends JFrame {
 		if (debug.get()) System.out.println("waiting to proceed...");
 		synchronized (ex) {
 			if (debug.get()) System.out.println("proceeding!");
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	public boolean paused() {
