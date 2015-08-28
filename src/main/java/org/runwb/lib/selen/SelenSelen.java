@@ -53,7 +53,7 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 		}
 	}
 	public Timeout timeout = new Timeout();
-	public int timeout() { return timeout.stack.peek(); }
+	public int timeout() { return timeout.cur; }
 
 	SelenSelen(WebDriver driver) {
 		driver(driver);
