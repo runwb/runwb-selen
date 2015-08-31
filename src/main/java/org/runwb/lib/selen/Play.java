@@ -42,7 +42,7 @@ public class Play extends JFrame {
 			synchronized (in) {
 				while (true) {
 					try {
-						if (paused) {
+						if (paused.get()) {
 							synchronized (ex) {
 								if (debug.get()) System.out.println("daemon holding");
 								in.wait();
@@ -68,80 +68,76 @@ public class Play extends JFrame {
 	ActionListener action = new ActionListener() {
 		@Override public void actionPerformed(ActionEvent e) {
 			if (e.getSource().equals(run)) {
-				if (run.getText().equals(PAUSE)) {
-					run.setEnabled(false);
-					run.setText(RESUME);
+				if (run.getText().equals(PAUSE))
 					pause();
-					run.setEnabled(true);
-					step.setEnabled(true);
-				}
-				else if (run.getText().equals(RESUME)) {
-					step.setEnabled(false);
-					run.setEnabled(false);
-					run.setText(PAUSE);
+				else if (run.getText().equals(RESUME))
 					resume();
-					run.setEnabled(true);
-				}
 			}
 			else if (e.getSource().equals(step)) {
-				run.setEnabled(false);
 				step();
-				run.setEnabled(true);
 			}
-			else if (e.getSource().equals(kill)) {
+			else if (e.getSource().equals(kill))
 				System.exit(-1);
-			}
 		}
 	};
 	static class Ex {}
 	static class In {}
 	Object ex = new Ex();
 	Object in = new In();
-	boolean paused = false;
+	AtomicBoolean paused = new AtomicBoolean(false);
 	public void proceed() {
 		if (debug.get()) System.out.println("waiting to proceed...");
 		synchronized (ex) {
 			if (debug.get()) System.out.println("proceeding!");
-			try {
-				Thread.sleep(500);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			if (!paused())
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 		}
 	}
 	public boolean paused() {
-		synchronized (in) {
-			return paused;
-		}
+		return paused.get();
 	}
 
 	public void pause() {
 		synchronized (in) {
 			if (debug.get()) System.out.println("pausing issuing...");
-			if (paused)
+			if (paused.get())
 				return;
-			paused = true;
+			run.setEnabled(false);
+			run.setText(RESUME);
+			paused.set(true);
 			if (debug.get()) System.out.println("pausing issued");
 			in.notify();
+			run.setEnabled(true);
+			step.setEnabled(true);
 		}
 	}
 	public void resume() {
 		synchronized (in) {
 			if (debug.get()) System.out.println("resume issuing...");
-			if (!paused)
+			if (!paused.get())
 				return;
-			paused = false;
+			step.setEnabled(false);
+			run.setEnabled(false);
+			run.setText(PAUSE);
+			paused.set(false);
 			if (debug.get()) System.out.println("resume issued");
 			in.notify();
+			run.setEnabled(true);
 		}
 	}
 	public void step() {
 		synchronized (in) {
+			run.setEnabled(false);
 			if (debug.get()) System.out.println("step issuing...");
-			if (!paused)
+			if (!paused.get())
 				return;
 			in.notify();
 			if (debug.get()) System.out.println("step given");
+			run.setEnabled(true);
 		}
 	}
 	{
