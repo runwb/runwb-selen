@@ -2,6 +2,7 @@ package org.runwb.lib.selen;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Point;
@@ -17,13 +18,19 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.JButton;
-import javax.swing.JFrame;
+import javax.swing.JDialog;
 import javax.swing.JPanel;
+import javax.swing.WindowConstants;
 
 import org.apache.commons.io.FileUtils;
 
 @SuppressWarnings("serial")
-public class Play extends JFrame {
+public class Play extends JPanel {
+
+	public static void main(String[] args) {
+		Play p = new Play();
+		p.standalone();
+	}
 
 	public static final String PAUSE = "Pause";
 	public static final String RESUME = "Resume";
@@ -42,7 +49,7 @@ public class Play extends JFrame {
 			synchronized (in) {
 				while (true) {
 					try {
-						if (paused.get()) {
+						if (paused()) {
 							synchronized (ex) {
 								if (debug.get()) System.out.println("daemon holding");
 								in.wait();
@@ -87,6 +94,8 @@ public class Play extends JFrame {
 	AtomicBoolean paused = new AtomicBoolean(false);
 	public void proceed() {
 		if (debug.get()) System.out.println("waiting to proceed...");
+		if (paused())
+			step.setEnabled(true);
 		synchronized (ex) {
 			if (debug.get()) System.out.println("proceeding!");
 			if (!paused())
@@ -96,6 +105,7 @@ public class Play extends JFrame {
 					e.printStackTrace();
 				}
 		}
+		step.setEnabled(false);
 	}
 	public boolean paused() {
 		return paused.get();
@@ -104,7 +114,7 @@ public class Play extends JFrame {
 	public void pause() {
 		synchronized (in) {
 			if (debug.get()) System.out.println("pausing issuing...");
-			if (paused.get())
+			if (paused())
 				return;
 			run.setEnabled(false);
 			run.setText(RESUME);
@@ -112,13 +122,12 @@ public class Play extends JFrame {
 			if (debug.get()) System.out.println("pausing issued");
 			in.notify();
 			run.setEnabled(true);
-			step.setEnabled(true);
 		}
 	}
 	public void resume() {
 		synchronized (in) {
 			if (debug.get()) System.out.println("resume issuing...");
-			if (!paused.get())
+			if (!paused())
 				return;
 			step.setEnabled(false);
 			run.setEnabled(false);
@@ -131,18 +140,34 @@ public class Play extends JFrame {
 	}
 	public void step() {
 		synchronized (in) {
-			run.setEnabled(false);
 			if (debug.get()) System.out.println("step issuing...");
-			if (!paused.get())
+			if (!paused())
 				return;
 			in.notify();
 			if (debug.get()) System.out.println("step given");
-			run.setEnabled(true);
 		}
 	}
 	{
+		run.setPreferredSize(new Dimension(XL, YL));
+		run.addActionListener(action);
+		step.setPreferredSize(new Dimension(XL, YL));
+		step.addActionListener(action);
+		step.setEnabled(false);
+		kill.setPreferredSize(new Dimension(XL / 2, YL / 2));
+		kill.addActionListener(action);
+
+		JPanel buttons = new JPanel();
+		buttons.setLayout(new FlowLayout());
+		add(buttons);
+		buttons.add(run);
+		buttons.add(step);
+		
+		daemon.setDaemon(true);
+		daemon.start();
+	}
+	public void standalone() {
 		Point loc = new Point(50, 50);
-		File config = new File("batchControlWin.txt");
+		File config = new File("selenWin.txt");
 		if (config.exists())
 			try {
 				String[] xy = FileUtils.readFileToString(config).split(",");
@@ -165,53 +190,37 @@ public class Play extends JFrame {
 	    	loc.x = bound.x + 50;
 	    	loc.y = bound.y + 50;
 	    }
-		
-		run.setPreferredSize(new Dimension(XL, YL));
-		run.addActionListener(action);
-		step.setPreferredSize(new Dimension(XL, YL));
-		step.addActionListener(action);
-		step.setEnabled(false);
-//		kill.setPreferredSize(new Dimension(XL / 2, YL / 2));
-		kill.addActionListener(action);
+	    JDialog dlg = new JDialog();
+	    dlg.setTitle("RWB Selen Control");
+	    dlg.setLocation(loc);
+	    dlg.setVisible(true);
+	    dlg.setAlwaysOnTop(true);
+		dlg.setResizable(false);
 
-		setTitle("RWB Task - Batch Run");
-		setResizable(false);
-		JPanel buttons = new JPanel();
-		add(buttons);
-		buttons.add(run);
-		buttons.add(step);
-		add(kill, BorderLayout.NORTH);
-		
-		pack();
-		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-		addWindowListener(new WindowAdapter(){
+	    dlg.add(this, BorderLayout.CENTER);
+	    dlg.add(kill, BorderLayout.NORTH);
+	    
+	    dlg.pack();
+	    dlg.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+	    dlg.addWindowListener(new WindowAdapter(){
 			@Override public void windowClosing(WindowEvent e) {
-				dispose();
+				dlg.dispose();
 			}
 		});
-		addComponentListener(new ComponentAdapter(){
+	    dlg.addComponentListener(new ComponentAdapter(){
 			@Override public void componentMoved(ComponentEvent e) {
 				try {
-					Point loc = getLocation();
+					Point loc = dlg.getLocation();
 					FileUtils.write(config, loc.x + ", " + loc.y);
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
 			}
 		});
-		daemon.setDaemon(true);
-		daemon.start();
-		setLocation(loc);
-		setVisible(true);
-		setAlwaysOnTop(true);
 		try {
 			FileUtils.write(config, loc.x + ", " + loc.y);
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-	}
-
-	public static void main(String[] args) {
-		new Play();
 	}
 }
