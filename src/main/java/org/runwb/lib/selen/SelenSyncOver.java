@@ -48,7 +48,7 @@ public abstract class SelenSyncOver {
 		if (got)
 			System.out.println("over condition remains!!! - timing out after " + Math.round(after / 1000) + "s");
 		else
-			System.out.println("over condition not encountered!!! - timing out after " + Math.round(before / 1000) + "s");
+			System.out.println("over condition probably missed!!! - timing out after " + Math.round(before / 1000) + "s");
 		return false;
 	}
 }
