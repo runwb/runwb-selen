@@ -2,15 +2,15 @@ package org.runwb.lib.selen;
 
 import org.runwb.lib.selen.Selen.Sync.Yes;
 
-public abstract class SelenSyncOver <P> {
+public abstract class SelenSyncOver {
 	final Selen selen;
-	final Yes<P> yes;
+	final Yes yes;
 	final long interval;
 	final long before;
 	final long after;
 	final boolean pub;
 
-	SelenSyncOver(Selen selen, long interval, long before, long after, boolean pub, Yes<P> yes) {
+	SelenSyncOver(Selen selen, long interval, long before, long after, boolean pub, Yes yes) {
 		this.selen = selen;
 		this.interval = interval;
 		this.before = before;
@@ -18,7 +18,7 @@ public abstract class SelenSyncOver <P> {
 		this.pub = pub;
 		this.yes = yes;
 	}
-	public boolean is(P p) {
+	public boolean is() {
 		boolean got = false;
 		long start = System.currentTimeMillis();
 		boolean first = true;
@@ -32,7 +32,7 @@ public abstract class SelenSyncOver <P> {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-			boolean met = yes.yes(p);
+			boolean met = yes.yes();
 			if (met) {
 				if (!got && pub)
 					System.out.println("over condition encountered!!!");
