@@ -56,4 +56,17 @@ public class Selen extends SelenSelen {
 			super(cause);
 		}
 	}
+	public static class Sync extends SelenSync {
+		public Sync(Selen selen) {
+			super(selen);
+		}
+		public static interface Yes<P> {
+			boolean yes(P p);
+		}
+		public static class Over<P> extends SelenSyncOver<P> {
+			Over(Selen selen, long interval, long before, long after, boolean pub, Yes<P> yes) {
+				super(selen, interval, before, after, pub, yes);
+			}
+		}
+	}
 }

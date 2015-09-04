@@ -23,6 +23,7 @@ import org.runwb.lib.selen.Selen.Page;
 
 public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputDevices {
 	public WebDriver driver;
+	public final SelenSync sync = new SelenSync((Selen)this);
 	Map<Class<? extends Page>, Page> pages = new LinkedHashMap<>();
 
 	public Play play = new Play();
