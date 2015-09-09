@@ -8,10 +8,13 @@ public class SelenSync {
 	SelenSync(Selen selen) {
 		this.selen = selen;
 	}
-	public Over over(long before, long after, boolean pub, Yes yes) {
-		return over(200, before, after, pub, yes);
+	public Over over(double afterS, Yes yes) {
+		return new Over(selen, 0.2, 2, afterS, true, yes);
 	}
-	public <P> Over over(long interval, long before, long after, boolean pub, Yes yes) {
-		return new Over(selen, interval, before, after, pub, yes);
+	public Over over(double beforeS, double afterS, boolean pub, Yes yes) {
+		return new Over(selen, 0.2, beforeS, afterS, pub, yes);
+	}
+	public <P> Over over(double intervalS, double beforeS, double afterS, boolean pub, Yes yes) {
+		return new Over(selen, intervalS, beforeS, afterS, pub, yes);
 	}
 }

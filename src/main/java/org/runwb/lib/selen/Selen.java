@@ -2,6 +2,7 @@ package org.runwb.lib.selen;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -9,7 +10,7 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 public class Selen extends SelenSelen {
 	public static abstract class Page extends SelenPage {
 		public class Obj extends SelenObj {
-			public Obj(Obj container, By by, Obj.MultiChoose multiChoose) { super(container, by, multiChoose); }
+			public Obj(SearchContext container, By by, Obj.MultiChoose multiChoose) { super(container, by, multiChoose); }
 			public Obj(WebElement elem, By by) { super(elem, by); }
 			@Override public Page page() {
 				return Page.this;
@@ -64,8 +65,8 @@ public class Selen extends SelenSelen {
 			boolean yes();
 		}
 		public static class Over extends SelenSyncOver {
-			Over(Selen selen, long interval, long before, long after, boolean pub, Yes yes) {
-				super(selen, interval, before, after, pub, yes);
+			Over(Selen selen, double intervalS, double beforeS, double afterS, boolean pub, Yes yes) {
+				super(selen, intervalS, beforeS, afterS, pub, yes);
 			}
 		}
 	}

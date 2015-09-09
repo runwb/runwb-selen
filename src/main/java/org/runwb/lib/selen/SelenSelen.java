@@ -1,12 +1,13 @@
 package org.runwb.lib.selen;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.util.Deque;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -24,7 +25,7 @@ import org.runwb.lib.selen.Selen.Page;
 public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputDevices {
 	public WebDriver driver;
 	public final SelenSync sync = new SelenSync((Selen)this);
-	Map<Class<? extends Page>, Page> pages = new LinkedHashMap<>();
+//	Map<Class<? extends Page>, Page> pages = new LinkedHashMap<>();
 
 	public Play play = new Play();
 	public static interface Closed { void run(); }
@@ -57,10 +58,6 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 	public int timeout() { return timeout.cur; }
 
 	SelenSelen(WebDriver driver) {
-		driver(driver);
-	}
-	
-	public void driver(WebDriver driver) {
 		this.driver = driver;
 		this.driver.manage().timeouts().implicitlyWait(timeout.cur, TimeUnit.SECONDS);
 	}
@@ -73,7 +70,7 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 			this.timeout.pop();
 		return obj;
 	}
-	public void bindPage(Page p) { bindPage(p, null); }
+/*	public void bindPage(Page p) { bindPage(p, null); }
 	@SuppressWarnings("unchecked")
 	public void bindPage(Page p, String url) {
 		p.driver = this;
@@ -82,15 +79,39 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 		while (pCsl.isAnonymousClass())
 			pCsl = (Class<? extends Page>) pCsl.getSuperclass();
 		pages.put(pCsl, p);
-	}
+	}*/
 
-	public void bindPage(Class<? extends Page> pageCls) { bindPage(pageCls, null); }
-	public void bindPage(Class<? extends Page> pageCls, String url) {
-		bindPage(Selen.newPage(pageCls, this, url));
+	@Deprecated
+	public <P extends Page> P bindPage(Class<P> pageCls) {
+		return page(pageCls);
 	}
-	@SuppressWarnings("unchecked")
+	@Deprecated
+	public <P extends Page> P bindPage(P p) {
+		return page(p);
+	}
+	@Deprecated
+	public <P extends Page> P bindPage(Class<P> pageCls, String url) {
+		get(url);
+		return page(pageCls);
+	}
+	public <P extends Page> P page(P p) {
+		p.bind(this);
+		return p;
+	}
+	
 	public <P extends Page> P page(Class<P> pageCls) {
-		return (P) pages.get(pageCls);
+//		P p = (P) pages.get(pageCls);
+//		if (p == null)
+//		return (P) bindPage(pageCls);
+//		return (P) pages.get(pageCls);
+		try {
+			P p = (P) pageCls.newInstance();
+//			p.driver = this;
+			p.bind(this);
+			return p;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 	
 	@Override public void close() { driver.close(); }
@@ -120,5 +141,64 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 	public InputStream getScreenshot() {
 		byte[] s = ((FirefoxDriver)driver).getScreenshotAs(OutputType.BYTES);
 		return new ByteArrayInputStream(s);
+	}
+	public void capture (int timeoutS, String...strs) {
+		long timeout = timeoutS * 1000;
+		File[] files = new File[strs.length];
+		boolean[] dones = new boolean[strs.length];
+		PrintWriter[] pws = new PrintWriter[strs.length];
+		for (int i=0; i<strs.length; i++) {
+			try {
+				files[i] = File.createTempFile("selen capture" + i + "_", ".txt");
+				pws[i] = new PrintWriter(files[i]);
+				pws[i].println(strs[i]);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		long start = System.currentTimeMillis();
+		boolean allDone = false;
+		while (System.currentTimeMillis() - start < timeout || allDone) {
+			try {
+				allDone = true;
+				String html = findElement(0, By.cssSelector("html")).getAttribute("innerHTML");
+				for (int i=0; i<strs.length; i++) {
+					if (!dones[i])
+						if (html.contains(strs[i])) {
+							pws[i].println((System.currentTimeMillis() - start) / 1000 + "s");
+							pws[i].append(html);
+							dones[i] = true;
+						}
+					allDone = allDone && dones[i];
+				}
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+				break;
+			}
+		}
+		
+		for (int i=0; i<strs.length; i++) {
+			System.out.println(files[i]);
+			pws[i].flush();
+			pws[i].close();
+		}
+	}
+	public void captureRapid (double intervalS, int times) {
+		long interval = Math.round(intervalS * 1000);
+		for (int i=0; i<times; i++) {
+			try {
+				File file = File.createTempFile("selen capture rapid" + i + "_", ".txt");
+				PrintWriter pw = new PrintWriter(file);
+				String html = findElement(0, By.cssSelector("html")).getAttribute("innerHTML");
+				pw.append(html);
+				pw.flush();
+				pw.close();
+				System.out.println(file);
+				Thread.sleep(interval);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }

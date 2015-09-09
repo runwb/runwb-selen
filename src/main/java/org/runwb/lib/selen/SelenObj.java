@@ -10,32 +10,38 @@ import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
+import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.interactions.internal.Coordinates;
 import org.openqa.selenium.internal.Locatable;
 import org.runwb.lib.selen.Selen.Page;
-import org.runwb.lib.selen.Selen.Page.Obj;
 
 public abstract class SelenObj implements WebElement, Locatable {
 	public abstract Selen.Page page();
 	WebElement elem;
 	NoSuchElementException noElemXn;
+	public String name;
+	public final By by;
+	public final MultiChoose multiChoose;
+	public final SearchContext container;
+	Boolean late = null;
+
 	public NoSuchElementException noElemXn() {
 		elem();
 		return noElemXn;
 	}
-	boolean bound = false;
+//	final boolean bound;
 	public WebElement elem() {
-		if (!bound)
-			bind();
+		if (elem == null)
+			return bind();
 		return elem;
 	}
-	public boolean bound() { return bound; }
+//	public boolean bound() { return bound; }
 
-	void action() {
-		elem();
+	WebElement action() {
+		WebElement e = elem();
 		WebDriver wd = page().driver;
 		if (wd instanceof Selen) {
 			Selen selen = (Selen) wd;
@@ -46,7 +52,7 @@ public abstract class SelenObj implements WebElement, Locatable {
 				else if (by != null)
 					nm = by.toString();
 				else
-					nm = elem.toString();
+					nm = e.toString();
 				System.out.println("\"" + nm + "\" action paused...");
 				System.out.println(Thread.currentThread().getStackTrace()[3]);
 				selen.play.proceed();
@@ -55,39 +61,37 @@ public abstract class SelenObj implements WebElement, Locatable {
 			else
 				selen.play.proceed();
 		}
+		return e;
 	}
 
-	public void bind() {
-		if (bound)
+	WebElement bind() {
+/*		if (bound)
 			return;
 		bound = true;
 		if (elem != null) {
 			bound = true;
 			return;
-		}
+		}*/
 		long start = System.currentTimeMillis();
-		System.out.println("Obj:" + name + " - finding... ");
+		if (Boolean.TRUE.equals(late))
+			System.out.println("Obj:" + name + " - finding... ");
 		WebElement e;
+		SearchContext container = this.container;
 		if (container == null)
-			if (multiChoose == null)
-				e = page().driver.findElement(by);
-			else {
-				List<WebElement> candidates = page().driver.findElements(by);
-				if (candidates.size() > 0)
-					e = multiChoose.pick(candidates);
-				else
-					e = page().new NullObj(null);
-			}
-		else
-			if (multiChoose == null)
+			container = page().driver;
+		if (multiChoose == null)
+			try {
 				e = container.findElement(by);
-			else {
-				List<WebElement> candidates = container.findElements(by);
-				if (candidates.size() > 0)
-					e = multiChoose.pick(candidates);
-				else
-					e = page().new NullObj(null);
+			} catch (NoSuchElementException xn) {
+				e = page().new NullObj(xn);
 			}
+		else {
+			List<WebElement> candidates = container.findElements(by);
+			if (candidates.size() > 0)
+				e = multiChoose.pick(candidates);
+			else
+				e = page().new NullObj(null);
+		}
 		if (e instanceof Page.NullObj) {
 			noElemXn = ((Page.NullObj) e).noElemXn;
 			e = null;
@@ -95,45 +99,42 @@ public abstract class SelenObj implements WebElement, Locatable {
 //			throw ((Page.NullObj) elem).exception;
 		else if (e instanceof Page.Obj)
 			e = ((Page.Obj) e).elem;
-		elem = e;
-		if (e != null)
-			System.out.println("Obj:" + name + " - found after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
-		else
-			System.out.println("Obj:" + name + " - not found after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
+//		elem = e;
+		if (Boolean.TRUE.equals(late))
+			if (e != null)
+				System.out.println("Obj:" + name + " - found after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
+			else
+				System.out.println("Obj:" + name + " - not found after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
+		return e;
 	}
-	public String name;
-	public final By by;
 	public interface MultiChoose {
 		WebElement pick(List<WebElement> elems);
 	}
-	public final MultiChoose multiChoose;
-	public final Obj container;
-	Boolean late = null;
 
 	public SelenObj(WebElement elem, By by) {
 		this(null, by, null);
 		this.elem = elem;
 	}
 
-	public SelenObj(Obj container, By by, MultiChoose multichoose) {
+	public SelenObj(SearchContext container, By by, MultiChoose multichoose) {
 		this.container = container;
 		this.by = by;
 		this.multiChoose = multichoose;
 	}
 
 	public void type(String txt) {
-		action();
+		WebElement e = action();
 		if (page().highlightObj)
 			highlightObj();
 		System.out.println("Obj:" + name + " - about to type " + txt);
-		elem.clear();
-		elem.sendKeys(txt);
+		e.clear();
+		e.sendKeys(txt);
 	}
 	public void click() {
-		action();
+		WebElement e = action();
 		if (page().highlightObj)
 			highlightObj();
-		elem.click();
+		e.click();
 		System.out.println("Obj:" + name + " - about to click it");
 	}
 	public void highlightObj() {
@@ -155,6 +156,9 @@ public abstract class SelenObj implements WebElement, Locatable {
 
 	public boolean isNull() {
 		return isNull(this) || elem() == null;
+	}
+	public boolean isObj() {
+		return !isNull();
 	}
 	public NoSuchElementException getNotFoundException() {
 		return isNull() ? ((Page.NullObj) this).noElemXn : null;
@@ -201,9 +205,9 @@ public abstract class SelenObj implements WebElement, Locatable {
 	@Override public boolean isDisplayed() { return elem().isDisplayed(); }
 	@Override public boolean isEnabled() { return elem().isEnabled(); }
 	@Override public boolean isSelected() { return elem().isSelected(); }
-	@Override public void clear() { action(); elem.clear(); }
-	@Override public void sendKeys(CharSequence... arg0) { action(); elem.sendKeys(arg0); }
-	@Override public void submit() { action(); elem.submit(); }
+	@Override public void clear() { action().clear(); }
+	@Override public void sendKeys(CharSequence... arg0) { action().sendKeys(arg0); }
+	@Override public void submit() { action().submit(); }
 
 	@Override public Coordinates getCoordinates() { return ((Locatable) elem()).getCoordinates(); }
 	

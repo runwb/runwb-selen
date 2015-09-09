@@ -5,27 +5,28 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebDriver;
 import org.runwb.lib.selen.Selen.Page;
 
 public abstract class SelenPage {
 	
 	public WebDriver driver;
-	public String url;
+//	public String url;
 	public String name;
 	public boolean highlightObj = false;
-	private boolean bound = false;
+//	private boolean bound = false;
 	public final Ready ready = new Ready();
 
-	final void bind (String url) {
-		if (!bound) {
-			bound = true;
-			this.url = url;
+	final void bind (WebDriver driver) {
+		this.driver = driver;
+//		if (!bound) {
+//			bound = true;
+//			this.url = url;
 			if (name == null)
 				name = getClass().getSimpleName();
-			if (this.url != null)
-				driver.get(this.url);
+//			if (this.url != null)
+//				driver.get(this.url);
 			System.out.println();
 			System.out.println("Page:" + this.name + " - checking on page");
 			long start = System.currentTimeMillis();
@@ -41,11 +42,14 @@ public abstract class SelenPage {
 					if (f.getType().isAssignableFrom(Selen.Page.Obj.class)) {
 						o = (Selen.Page.Obj) f.get(this);
 						if (o != null)
-							if (o.late == null || o.late == false) {
+							if (o.late == null || o.late != true) {
+								long startObj = System.currentTimeMillis();
+								System.out.println("Obj:" + o.name + " - finding... ");
 								o.bind();
-								NoSuchElementException noElemXn = o.noElemXn();
-								if (o.noElemXn() != null)
-									throw noElemXn;
+//								NoSuchElementException noElemXn = o.noElemXn();
+								if (o.noElemXn != null)
+									throw o.noElemXn;
+								System.out.println("Obj:" + o.name + " - found after " + ((float)(System.currentTimeMillis() - startObj) / 1000) + "s");
 							}
 					}
 			} catch (Exception e) {
@@ -56,7 +60,7 @@ public abstract class SelenPage {
 					throw new Selen.Xn("page not ready after timeout of: " + ((float)ready.timeout) + "s");
 				
 			System.out.println("Page:" + this.name + " - loaded after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
-		}
+//		}
 	}
 	public Map<String, Selen.Page.Obj> objs() {
 		try {
@@ -75,14 +79,14 @@ public abstract class SelenPage {
 			o.highlightObj();
 	}
 	public Page.Obj obj(By by) { return obj(null, by, null); }
-	public Page.Obj obj(Page.Obj container, By by) { return obj(container, by, null); }
+	public Page.Obj obj(SearchContext container, By by) { return obj(container, by, null); }
 	public Page.Obj obj(By by, Page.Obj.MultiChoose multiChoose) { return obj(null, by, multiChoose); }
-	public Page.Obj obj(Page.Obj container, By by, Page.Obj.MultiChoose multiChoose) { return ((Selen.Page)this).new Obj(container, by, multiChoose); }
+	public Page.Obj obj(SearchContext container, By by, Page.Obj.MultiChoose multiChoose) { return ((Selen.Page)this).new Obj(container, by, multiChoose); }
 
 	public Selen.Page.Obj late(By by) { return late(null, by, null); }
-	public Selen.Page.Obj late(Page.Obj container, By by) { return late(container, by, null); }
+	public Selen.Page.Obj late(SearchContext container, By by) { return late(container, by, null); }
 	public Selen.Page.Obj late(By by, Page.Obj.MultiChoose multiChoose) { return late(null, by, multiChoose); }
-	public Selen.Page.Obj late(Page.Obj container, By by, Page.Obj.MultiChoose multiChoose) {
+	public Selen.Page.Obj late(SearchContext container, By by, Page.Obj.MultiChoose multiChoose) {
 		Page.Obj obj = obj(container, by, multiChoose);
 		obj.late = true;
 		return obj;

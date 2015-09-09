@@ -3,11 +3,11 @@ package org.runwb.lib.selen;
 import org.openqa.selenium.WebDriver;
 
 public class SelenWb {
-	public static <P extends Selen.Page> P newPage(Class<P> pcls, WebDriver driver, String url) {
+	@Deprecated
+	public static <P extends Selen.Page> P newPage(Class<P> pcls, WebDriver driver) {
 		try {
 			P p = pcls.newInstance();
-			p.driver = driver;
-			p.bind(url);
+			p.bind(driver);
 			return p;
 		} catch (Exception e) {
 			throw new RuntimeException(e);

@@ -10,11 +10,11 @@ public abstract class SelenSyncOver {
 	final long after;
 	final boolean pub;
 
-	SelenSyncOver(Selen selen, long interval, long before, long after, boolean pub, Yes yes) {
+	SelenSyncOver(Selen selen, double intervalS, double beforeS, double afterS, boolean pub, Yes yes) {
 		this.selen = selen;
-		this.interval = interval;
-		this.before = before;
-		this.after = after;
+		this.interval = Math.round(intervalS * 1000);
+		this.before = Math.round(beforeS * 1000);
+		this.after = Math.round(afterS * 1000);
 		this.pub = pub;
 		this.yes = yes;
 	}
@@ -23,6 +23,11 @@ public abstract class SelenSyncOver {
 		long start = System.currentTimeMillis();
 		boolean first = true;
 		long timeout = before;
+		if (pub) {
+			System.out.println("waiting to get pass \"over\" condition...");
+			StackTraceElement[] ste = Thread.currentThread().getStackTrace();
+			System.out.println(ste[2]);
+		}
 		while (System.currentTimeMillis() - start <= timeout) {
 			if (first)
 				first = false;
