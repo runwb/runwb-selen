@@ -2,12 +2,18 @@ package org.runwb.lib.selen;
 
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.runwb.lib.selen.Selen.Page;
+import org.runwb.lib.selen.Selen.Page.Obj;
+import org.runwb.lib.selen.Selen.Page.Target;
 
 public abstract class SelenPage {
 	
@@ -20,47 +26,42 @@ public abstract class SelenPage {
 
 	final void bind (WebDriver driver) {
 		this.driver = driver;
-//		if (!bound) {
-//			bound = true;
-//			this.url = url;
-			if (name == null)
-				name = getClass().getSimpleName();
-//			if (this.url != null)
-//				driver.get(this.url);
-			System.out.println();
-			System.out.println("Page:" + this.name + " - checking on page");
-			long start = System.currentTimeMillis();
-			Selen.Page.Obj o = null;
-			try {
-				for (Field f : getClass().getFields())
-					if (f.getType().isAssignableFrom(Selen.Page.Obj.class)) {
-						o = (Selen.Page.Obj) f.get(this);
-						if (o != null)
-							o.name = f.getName();
+		if (name == null)
+			name = getClass().getSimpleName();
+		System.out.println();
+		System.out.println("Page:" + this.name + " - checking on page");
+		long start = System.currentTimeMillis();
+		Selen.Page.Obj o = null;
+		try {
+			for (Field f : getClass().getFields())
+				if (Selen.Page.Obj.class.isAssignableFrom(f.getType())) {
+					o = (Selen.Page.Obj) f.get(this);
+					if (o != null)
+						o.name = f.getName();
+				}
+			for (Field f : getClass().getFields())
+				if (Selen.Page.Obj.class.isAssignableFrom(f.getType())) {
+					o = (Selen.Page.Obj) f.get(this);
+					if (o != null) {
+						Obj.Late late = f.getAnnotation(Obj.Late.class);
+						if ((late == null || !late.is()) && (o.late == null || o.late != true)) {
+							long startObj = System.currentTimeMillis();
+							System.out.println("Obj:" + o.name + " - finding... ");
+							o.bind();
+							if (o.noElemXn != null)
+								throw o.noElemXn;
+							System.out.println("Obj:" + o.name + " - found after " + ((float)(System.currentTimeMillis() - startObj) / 1000) + "s");
+						}
 					}
-				for (Field f : getClass().getFields())
-					if (f.getType().isAssignableFrom(Selen.Page.Obj.class)) {
-						o = (Selen.Page.Obj) f.get(this);
-						if (o != null)
-							if (o.late == null || o.late != true) {
-								long startObj = System.currentTimeMillis();
-								System.out.println("Obj:" + o.name + " - finding... ");
-								o.bind();
-//								NoSuchElementException noElemXn = o.noElemXn();
-								if (o.noElemXn != null)
-									throw o.noElemXn;
-								System.out.println("Obj:" + o.name + " - found after " + ((float)(System.currentTimeMillis() - startObj) / 1000) + "s");
-							}
-					}
-			} catch (Exception e) {
-				throw new Selen.Xn("page not loading with expected obj: " + o, e);
-			}
-			if (ready.check != null)
-				if (!ready.waitFor())
-					throw new Selen.Xn("page not ready after timeout of: " + ((float)ready.timeout) + "s");
-				
-			System.out.println("Page:" + this.name + " - loaded after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
-//		}
+				}
+		} catch (Exception e) {
+			throw new Selen.Xn("page not loading with expected obj: " + o, e);
+		}
+		if (ready.check != null)
+			if (!ready.waitFor())
+				throw new Selen.Xn("page not ready after timeout of: " + ((float)ready.timeout) + "s");
+			
+		System.out.println("Page:" + this.name + " - loaded after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
 	}
 	public Map<String, Selen.Page.Obj> objs() {
 		try {
@@ -81,14 +82,25 @@ public abstract class SelenPage {
 	public Page.Obj obj(By by) { return obj(null, by, null); }
 	public Page.Obj obj(SearchContext container, By by) { return obj(container, by, null); }
 	public Page.Obj obj(By by, Page.Obj.MultiChoose multiChoose) { return obj(null, by, multiChoose); }
-	public Page.Obj obj(SearchContext container, By by, Page.Obj.MultiChoose multiChoose) { return ((Selen.Page)this).new Obj(container, by, multiChoose); }
+	public Page.Obj obj(SearchContext container, By by, Page.Obj.MultiChoose multiChoose) { return new Obj((Selen.Page)this, container, by, multiChoose); }
 
-	public Selen.Page.Obj late(By by) { return late(null, by, null); }
-	public Selen.Page.Obj late(SearchContext container, By by) { return late(container, by, null); }
-	public Selen.Page.Obj late(By by, Page.Obj.MultiChoose multiChoose) { return late(null, by, multiChoose); }
-	public Selen.Page.Obj late(SearchContext container, By by, Page.Obj.MultiChoose multiChoose) {
+	public <P extends Page> Page.Target<P> target(Class<P> target, By by) { return target(target, null, by, null); }
+	public <P extends Page> Page.Target<P> target(Class<P> target, SearchContext container, By by) { return target(target, container, by, null); }
+	public <P extends Page> Page.Target<P> target(Class<P> target, By by, Page.Obj.MultiChoose multiChoose) { return target(target, null, by, multiChoose); }
+	public <P extends Page> Page.Target<P> target(Class<P> target, SearchContext container, By by, Page.Obj.MultiChoose multiChoose) { return new Target<>((Selen.Page)this, target, container, by, multiChoose); }
+
+	public @Deprecated Page.Obj late(By by) { return late(null, by, null); }
+	public @Deprecated Page.Obj late(SearchContext container, By by) { return late(container, by, null); }
+	public @Deprecated Page.Obj late(By by, Page.Obj.MultiChoose multiChoose) { return late(null, by, multiChoose); }
+	public @Deprecated Page.Obj late(SearchContext container, By by, Page.Obj.MultiChoose multiChoose) {
 		Page.Obj obj = obj(container, by, multiChoose);
 		obj.late = true;
 		return obj;
 	}
+	
+	public Page.Select select(By by, Function<WebElement, List<WebElement>> choices) { return select(null, by, null, choices); }
+	public Page.Select select(SearchContext container, By by, Function<WebElement, List<WebElement>> choices) { return select(container, by, null, choices); }
+	public Page.Select select(By by, Page.Obj.MultiChoose multiChoose, Function<WebElement, List<WebElement>> choices) { return select(null, by, multiChoose, choices); }
+	public Page.Select select(SearchContext container, By by, Page.Obj.MultiChoose multiChoose, Function<WebElement, List<WebElement>> choices) { return new Page.Select((Selen.Page)this, container, by, multiChoose, choices); }
+
 }

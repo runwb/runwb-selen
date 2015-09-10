@@ -21,6 +21,8 @@ import org.openqa.selenium.interactions.HasInputDevices;
 import org.openqa.selenium.interactions.Keyboard;
 import org.openqa.selenium.interactions.Mouse;
 import org.runwb.lib.selen.Selen.Page;
+import org.runwb.lib.selen.Selen.Page.Obj;
+import org.runwb.lib.selen.Selen.Page.NullObj;
 
 public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputDevices {
 	public WebDriver driver;
@@ -118,9 +120,9 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 	@Override public Page.Obj findElement(By arg0) {
 		try {
 			WebElement e = driver.findElement(arg0);
-			return new Page(){}.new Obj(e, arg0);
+			return new Obj(new Page(){}, e, arg0);
 		} catch (NoSuchElementException e) {
-			return new Page(){}.new NullObj(e);
+			return new NullObj(new Page(){}, e);
 		}
 	}
 	@Override public List<WebElement> findElements(By arg0) { return driver.findElements(arg0); }

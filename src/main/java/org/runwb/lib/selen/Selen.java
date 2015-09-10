@@ -1,5 +1,11 @@
 package org.runwb.lib.selen;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.util.List;
+import java.util.function.Function;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.SearchContext;
@@ -9,17 +15,46 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 
 public class Selen extends SelenSelen {
 	public static abstract class Page extends SelenPage {
-		public class Obj extends SelenObj {
-			public Obj(SearchContext container, By by, Obj.MultiChoose multiChoose) { super(container, by, multiChoose); }
-			public Obj(WebElement elem, By by) { super(elem, by); }
-			@Override public Page page() {
-				return Page.this;
+		public static class Obj extends SelenPageObj {
+			public Obj(Page page, SearchContext container, By by, Obj.MultiChoose multiChoose) { super(page, container, by, multiChoose); }
+			public Obj(Page page, WebElement elem, By by) { super(page, elem, by); }
+			@java.lang.annotation.Target(value = { ElementType.FIELD })
+			@Retention(value = RetentionPolicy.RUNTIME)
+			public static @interface Late {
+				boolean is() default true;
 			}
 		}
-		public class NullObj extends Obj {
+		public static class Target<P extends Page> extends Obj {
+			final Class<P> target;
+			public Target(Page page, Class<P> target, SearchContext container, By by, MultiChoose multiChoose) {
+				super(page, container, by, multiChoose);
+				this.target = target;
+			}
+			@SuppressWarnings("unchecked")
+			@Override
+			public P go() {
+				click();
+				if (target != null)
+					try {
+						P p = target.newInstance();
+						p.bind(page.driver);
+						return p;
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+				else
+					return null;
+			}
+		}
+		public static class Select extends SelenPageSelect {
+			public Select(Page page, SearchContext container, By by, MultiChoose multiChoose, Function<WebElement, List<WebElement>> choices) {
+				super(page, container, by, multiChoose, choices);
+			}
+		}
+		public static class NullObj extends Obj {
 			public final NoSuchElementException noElemXn;
-			public NullObj(NoSuchElementException exception) {
-				super((WebElement) null, null);
+			public NullObj(Page page, NoSuchElementException exception) {
+				super(page, (WebElement) null, null);
 				this.noElemXn = exception;
 			}
 		}

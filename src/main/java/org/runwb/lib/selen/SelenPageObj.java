@@ -17,12 +17,15 @@ import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.interactions.internal.Coordinates;
 import org.openqa.selenium.internal.Locatable;
 import org.runwb.lib.selen.Selen.Page;
+import org.runwb.lib.selen.Selen.Page.Obj;
+import org.runwb.lib.selen.Selen.Page.NullObj;
 
-public abstract class SelenObj implements WebElement, Locatable {
-	public abstract Selen.Page page();
+public abstract class SelenPageObj implements WebElement, Locatable {
+	public Selen.Page page() { return page; }
 	WebElement elem;
 	NoSuchElementException noElemXn;
 	public String name;
+	public final Page page;
 	public final By by;
 	public final MultiChoose multiChoose;
 	public final SearchContext container;
@@ -83,14 +86,14 @@ public abstract class SelenObj implements WebElement, Locatable {
 			try {
 				e = container.findElement(by);
 			} catch (NoSuchElementException xn) {
-				e = page().new NullObj(xn);
+				e = new NullObj(page(), xn);
 			}
 		else {
 			List<WebElement> candidates = container.findElements(by);
 			if (candidates.size() > 0)
 				e = multiChoose.pick(candidates);
 			else
-				e = page().new NullObj(null);
+				e = new NullObj(page(), null);
 		}
 		if (e instanceof Page.NullObj) {
 			noElemXn = ((Page.NullObj) e).noElemXn;
@@ -111,12 +114,13 @@ public abstract class SelenObj implements WebElement, Locatable {
 		WebElement pick(List<WebElement> elems);
 	}
 
-	public SelenObj(WebElement elem, By by) {
-		this(null, by, null);
+	public SelenPageObj(Page page, WebElement elem, By by) {
+		this(page, null, by, null);
 		this.elem = elem;
 	}
 
-	public SelenObj(SearchContext container, By by, MultiChoose multichoose) {
+	public SelenPageObj(Page page, SearchContext container, By by, MultiChoose multichoose) {
+		this.page = page;
 		this.container = container;
 		this.by = by;
 		this.multiChoose = multichoose;
@@ -169,9 +173,9 @@ public abstract class SelenObj implements WebElement, Locatable {
 	
 	@Override public Page.Obj findElement(By arg0) {
 		try {
-			return page().new Obj(elem().findElement(arg0), arg0);
+			return new Obj(page(), elem().findElement(arg0), arg0);
 		} catch (NoSuchElementException e) {
-			return page().new NullObj(e);
+			return new NullObj(page(), e);
 		}
 	}
 	public Page.Obj findElement(Integer timeout, By arg0) {
@@ -193,7 +197,7 @@ public abstract class SelenObj implements WebElement, Locatable {
 			return null;
 		List<WebElement> newList = new ArrayList<>();
 		for (WebElement e : list)
-			newList.add(page().new Obj(e, arg0));
+			newList.add(new Obj(page(), e, arg0));
 		return newList;
 	}
 	@Override public String getAttribute(String arg0) { return elem().getAttribute(arg0); }
@@ -218,5 +222,8 @@ public abstract class SelenObj implements WebElement, Locatable {
 		if (by != null)
 			sb.append("by: " + by + "; ");
 		return sb.toString();
+	}
+	public <P extends Page> P go() {
+		throw new UnsupportedOperationException();
 	}
 }
