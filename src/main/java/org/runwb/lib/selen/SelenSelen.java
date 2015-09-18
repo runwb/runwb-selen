@@ -126,7 +126,7 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 		}
 	}
 	@Override public List<WebElement> findElements(By arg0) { return driver.findElements(arg0); }
-	@Override public void get(String arg0) { driver.get(arg0); }
+	@Override public void get(String arg0) { action(); driver.get(arg0); }
 	@Override public String getCurrentUrl() { return driver.getCurrentUrl(); }
 	@Override public String getPageSource() { return driver.getPageSource(); }
 	@Override public String getTitle() { return driver.getTitle(); }
@@ -203,4 +203,22 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 			}
 		}
 	}
+	void action() {
+		if (play.paused()) {
+			System.out.println("\"page action paused...");
+			StackTraceElement[] stes = Thread.currentThread().getStackTrace();
+			for (int i=1; i<stes.length; i++) {
+				StackTraceElement ste = stes[i];
+				if (!ste.getClassName().startsWith(getClass().getPackage().getName())) {
+					System.out.println(ste);
+					break;
+				}
+			}
+			play.proceed();
+			System.out.println("\"page action continue");
+		}
+		else
+			play.proceed();
+	}
+
 }
