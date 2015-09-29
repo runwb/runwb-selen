@@ -9,6 +9,8 @@ public class Ready {
 	public BooleanSupplier check = null;
 
 	public boolean waitFor() {
+		if (check == null)
+			return true;
 		long start = System.currentTimeMillis();
 		long timeoutMs = (long) timeout * 1000;
 		long retryMs = (long) retry * 1000;
@@ -20,8 +22,12 @@ public class Ready {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			if (check.getAsBoolean())
-				return true;
+			try {
+				if (check.getAsBoolean())
+					return true;
+			} catch (Exception xn) {
+				return false;
+			}
 		}
 		return false;
 	}

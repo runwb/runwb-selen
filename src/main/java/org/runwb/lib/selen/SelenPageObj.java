@@ -2,6 +2,7 @@ package org.runwb.lib.selen;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.JOptionPane;
 
@@ -21,31 +22,33 @@ import org.runwb.lib.selen.Selen.Page.Obj;
 import org.runwb.lib.selen.Selen.Page.NullObj;
 
 public abstract class SelenPageObj implements WebElement, Locatable {
-	public Selen.Page page() { return page; }
-	WebElement elem;
+	final WebElement elem;
 	NoSuchElementException noElemXn;
 	public String name;
 	public final Page page;
 	public final By by;
-	public final MultiChoose multiChoose;
-	public final SearchContext container;
-	Boolean late = null;
+	public MultiChoose multiChoose;
+	public SearchContext container;
+	public Boolean late = null;
+	@SuppressWarnings("unchecked")
+	public <O extends Obj> O multiChoose(MultiChoose multiChoose) { this.multiChoose = multiChoose; return (O)this; }
+	@SuppressWarnings("unchecked")
+	public <O extends Obj> O container(SearchContext container) { this.container = container; return (O)this; }
+	@SuppressWarnings("unchecked")
+	public <O extends Obj> O late() { this.late = true; return (O)this; }
 
 	public NoSuchElementException noElemXn() {
 		elem();
 		return noElemXn;
 	}
-//	final boolean bound;
 	public WebElement elem() {
 		if (elem == null)
 			return bind();
 		return elem;
 	}
-//	public boolean bound() { return bound; }
-
 	WebElement action() {
 		WebElement e = elem();
-		WebDriver wd = page().driver;
+		WebDriver wd = page.driver;
 		if (wd instanceof Selen) {
 			Selen selen = (Selen) wd;
 			if (selen.play.paused()) {
@@ -68,32 +71,25 @@ public abstract class SelenPageObj implements WebElement, Locatable {
 	}
 
 	WebElement bind() {
-/*		if (bound)
-			return;
-		bound = true;
-		if (elem != null) {
-			bound = true;
-			return;
-		}*/
 		long start = System.currentTimeMillis();
 		if (Boolean.TRUE.equals(late))
 			System.out.println("Obj:" + name + " - finding... ");
 		WebElement e;
 		SearchContext container = this.container;
 		if (container == null)
-			container = page().driver;
+			container = page.driver;
 		if (multiChoose == null)
 			try {
 				e = container.findElement(by);
 			} catch (NoSuchElementException xn) {
-				e = new NullObj(page(), xn);
+				e = new NullObj(page, xn);
 			}
 		else {
 			List<WebElement> candidates = container.findElements(by);
 			if (candidates.size() > 0)
 				e = multiChoose.pick(candidates);
 			else
-				e = new NullObj(page(), null);
+				e = new NullObj(page, null);
 		}
 		if (e instanceof Page.NullObj) {
 			noElemXn = ((Page.NullObj) e).noElemXn;
@@ -115,20 +111,26 @@ public abstract class SelenPageObj implements WebElement, Locatable {
 	}
 
 	public SelenPageObj(Page page, WebElement elem, By by) {
-		this(page, null, by, null);
+		this.page = page;
+		this.by = by;
 		this.elem = elem;
 	}
 
-	public SelenPageObj(Page page, SearchContext container, By by, MultiChoose multichoose) {
+/*	public SelenPageObj(Page page, SearchContext container, By by, MultiChoose multichoose) {
 		this.page = page;
 		this.container = container;
 		this.by = by;
 		this.multiChoose = multichoose;
+	}*/
+	public SelenPageObj(Page page, By by) {
+		this.page = page;
+		this.by = by;
+		this.elem = null;
 	}
 
 	public void type(String txt) {
 		WebElement e = action();
-		if (page().highlightObj)
+		if (page.highlightObj)
 			highlightObj();
 		System.out.println("Obj:" + name + " - about to type " + txt);
 		e.clear();
@@ -136,14 +138,14 @@ public abstract class SelenPageObj implements WebElement, Locatable {
 	}
 	public void click() {
 		WebElement e = action();
-		if (page().highlightObj)
+		if (page.highlightObj)
 			highlightObj();
 		e.click();
 		System.out.println("Obj:" + name + " - about to click it");
 	}
 	public void highlightObj() {
 		System.out.println("highlighting obj:" + name);
-		JavascriptExecutor js = (JavascriptExecutor) page().driver;
+		JavascriptExecutor js = (JavascriptExecutor) page.driver;
 		js.executeScript(
 				"arguments[0].setAttribute('style', arguments[1]);",
 				elem(), "color: red; border: 3px solid red;");
@@ -168,18 +170,18 @@ public abstract class SelenPageObj implements WebElement, Locatable {
 		return isNull() ? ((Page.NullObj) this).noElemXn : null;
 	}
 	public void mouseTo() {
-		new Actions(page().driver).moveToElement(this).perform();
+		new Actions(page.driver).moveToElement(this).perform();
 	}
 	
 	@Override public Page.Obj findElement(By arg0) {
 		try {
-			return new Obj(page(), elem().findElement(arg0), arg0);
+			return new Obj(page, elem().findElement(arg0), arg0);
 		} catch (NoSuchElementException e) {
-			return new NullObj(page(), e);
+			return new NullObj(page, e);
 		}
 	}
 	public Page.Obj findElement(Integer timeout, By arg0) {
-		WebDriver driver = page().driver;
+		WebDriver driver = page.driver;
 		Selen selen = null;
 		if (driver instanceof Selen)
 			selen = (Selen) driver;
@@ -197,7 +199,7 @@ public abstract class SelenPageObj implements WebElement, Locatable {
 			return null;
 		List<WebElement> newList = new ArrayList<>();
 		for (WebElement e : list)
-			newList.add(new Obj(page(), e, arg0));
+			newList.add(new Obj(page, e, arg0));
 		return newList;
 	}
 	@Override public String getAttribute(String arg0) { return elem().getAttribute(arg0); }
@@ -223,7 +225,71 @@ public abstract class SelenPageObj implements WebElement, Locatable {
 			sb.append("by: " + by + "; ");
 		return sb.toString();
 	}
-	public <P extends Page> P go() {
+/*	public <P extends Page> P go() {
 		throw new UnsupportedOperationException();
+	}*/
+	public boolean exists(double timeoutS) {
+		return exists(0.2, timeoutS, true);
+	}
+	public boolean exists(double intervalS, double timeoutS, boolean pub) {
+		WebDriver driver = page.driver;
+		Selen selen = null;
+		if (driver instanceof Selen)
+			selen = (Selen) driver;
+		if (selen != null)
+			selen.manage().timeouts().implicitlyWait(200, TimeUnit.MILLISECONDS);
+		
+		try {
+			long interval = Math.round(intervalS * 1000);
+			long timeout = Math.round(timeoutS * 1000);
+	
+			
+			long start = System.currentTimeMillis();
+			boolean first = true;
+			if (pub) {
+				System.out.println("check obj exist...");
+				StackTraceElement[] stes = Thread.currentThread().getStackTrace();
+				String pkgNm = getClass().getPackage().getName();
+				for (int i=1; i<stes.length; i++) {
+					StackTraceElement ste = stes[i];
+					if (!ste.getClassName().startsWith(pkgNm)) {
+						System.out.println(ste);
+						break;
+					}
+				}
+			}
+			int times = 0;
+			boolean res = false;
+			while (System.currentTimeMillis() - start <= timeout) {
+				if (first)
+					first = false;
+				else
+					try {
+						Thread.sleep(interval);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				boolean exists;
+				try {
+					exists = elem() != null;
+				} catch (Exception xn) {
+					exists = false;
+				}
+				times++;
+				if (exists) {
+					res = true;
+					break;
+				}
+			}
+			if (res)
+				System.out.println("obj exists suceeded!!! - after " + times + " trys (" + Math.round(interval / 1000) + "s interval)");
+			else
+				System.out.println("obj exists failed!!! - timing out after " + Math.round(timeout / 1000) + "s");
+			return res;
+		}
+		finally {
+			if (selen != null)
+				selen.manage().timeouts().implicitlyWait(selen.timeout(), TimeUnit.SECONDS);
+		}
 	}
 }

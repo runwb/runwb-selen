@@ -5,18 +5,16 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 import org.runwb.lib.selen.Selen.Page;
 
 public abstract class SelenPageSelect extends Selen.Page.Obj {
 	public final Function<WebElement, List<WebElement>> choices;
 
-	public SelenPageSelect(Page page, SearchContext container, By by, MultiChoose multiChoose, Function<WebElement, List<WebElement>> choices) {
-		super(page, container, by, multiChoose);
+	public SelenPageSelect(Page page, By by, Function<WebElement, List<WebElement>> choices) {
+		super(page, by);
 		this.choices = choices;
 	}
-
 	public void select(String choice) {
 		click();
 		for (WebElement c : choices.apply(elem()))

@@ -1,47 +1,37 @@
 package org.runwb.lib.selen;
 
-import org.runwb.lib.selen.Selen.Sync.Over;
-
 import java.util.concurrent.TimeUnit;
 
 import org.runwb.lib.selen.Selen.Yes;
 
-public class SelenSync {
+public class SelenValidate {
 	final Selen selen;
-	SelenSync(Selen selen) {
+	SelenValidate(Selen selen) {
 		this.selen = selen;
 	}
-	public Over over(double afterS, Yes yes) {
-		return new Over(selen, 0.2, 2, afterS, true, yes);
+	
+	public boolean is(double timeoutS, Yes yes) {
+		return is(0.2, timeoutS, true, yes);
 	}
-	public Over over(double beforeS, double afterS, boolean pub, Yes yes) {
-		return new Over(selen, 0.2, beforeS, afterS, pub, yes);
-	}
-	public Over over(double intervalS, double beforeS, double afterS, boolean pub, Yes yes) {
-		return new Over(selen, intervalS, beforeS, afterS, pub, yes);
-	}
-	public boolean exists(double timeoutS, Yes yes) {
-		return exists(0.2, timeoutS, true, yes);
-	}
-	public boolean exists(double intervalS, double timeoutS, boolean pub, Yes yes) {
+	public boolean is(double intervalS, double timeoutS, boolean pub, Yes yes) {
+
 		selen.manage().timeouts().implicitlyWait(200, TimeUnit.MILLISECONDS);
-		
 		try {
 			long interval = Math.round(intervalS * 1000);
 			long timeout = Math.round(timeoutS * 1000);
-	
-			
 			long start = System.currentTimeMillis();
 			boolean first = true;
 			if (pub) {
-				System.out.println("check exist...");
+				System.out.println("validating...");
 				StackTraceElement[] stes = Thread.currentThread().getStackTrace();
 				String pkgNm = getClass().getPackage().getName();
-				for (StackTraceElement ste : stes)
+				for (int i=1; i<stes.length; i++) {
+					StackTraceElement ste = stes[i];
 					if (!ste.getClassName().startsWith(pkgNm)) {
 						System.out.println(ste);
 						break;
 					}
+				}
 			}
 			int times = 0;
 			boolean res = false;
@@ -54,14 +44,14 @@ public class SelenSync {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-				boolean exists;
+				boolean good;
 				try {
-					exists = yes.yes();
+					good = yes.yes();
 				} catch (Exception xn) {
-					exists = false;
+					good = false;
 				}
 				times++;
-				if (exists) {
+				if (good) {
 					res = true;
 					break;
 				}
@@ -76,4 +66,5 @@ public class SelenSync {
 			selen.manage().timeouts().implicitlyWait(selen.timeout(), TimeUnit.SECONDS);
 		}
 	}
+
 }

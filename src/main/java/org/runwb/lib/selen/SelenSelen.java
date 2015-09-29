@@ -220,5 +220,4 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 		else
 			play.proceed();
 	}
-
 }

@@ -5,7 +5,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
@@ -79,28 +78,24 @@ public abstract class SelenPage {
 		for (Page.Obj o : objs().values())
 			o.highlightObj();
 	}
-	public Page.Obj obj(By by) { return obj(null, by, null); }
-	public Page.Obj obj(SearchContext container, By by) { return obj(container, by, null); }
-	public Page.Obj obj(By by, Page.Obj.MultiChoose multiChoose) { return obj(null, by, multiChoose); }
-	public Page.Obj obj(SearchContext container, By by, Page.Obj.MultiChoose multiChoose) { return new Obj((Selen.Page)this, container, by, multiChoose); }
+	public Page.Obj obj(By by) { return new Obj((Selen.Page)this, by); }
+	public Page.Obj obj(SearchContext container, By by) { return obj(by).container(container); }
+	@Deprecated public Page.Obj obj(By by, Page.Obj.MultiChoose multiChoose) { return obj(by).multiChoose(multiChoose); }
+	@Deprecated public Page.Obj obj(SearchContext container, By by, Page.Obj.MultiChoose multiChoose) { return obj(by).container(container).multiChoose(multiChoose); }
 
-	public <P extends Page> Page.Target<P> target(Class<P> target, By by) { return target(target, null, by, null); }
-	public <P extends Page> Page.Target<P> target(Class<P> target, SearchContext container, By by) { return target(target, container, by, null); }
-	public <P extends Page> Page.Target<P> target(Class<P> target, By by, Page.Obj.MultiChoose multiChoose) { return target(target, null, by, multiChoose); }
-	public <P extends Page> Page.Target<P> target(Class<P> target, SearchContext container, By by, Page.Obj.MultiChoose multiChoose) { return new Target<>((Selen.Page)this, target, container, by, multiChoose); }
+	public <P extends Page> Page.Target<P> target(Class<P> target, By by) { return new Target<>((Selen.Page)this, target, by); }
+	@Deprecated public <P extends Page> Page.Target<P> target(Class<P> target, SearchContext container, By by) { return target(target, by).container(container); }
+	@Deprecated public <P extends Page> Page.Target<P> target(Class<P> target, By by, Page.Obj.MultiChoose multiChoose) { return target(target, by).multiChoose(multiChoose); }
+	@Deprecated public <P extends Page> Page.Target<P> target(Class<P> target, SearchContext container, By by, Page.Obj.MultiChoose multiChoose) { return target(target, by).container(container).multiChoose(multiChoose); }
 
-	public @Deprecated Page.Obj late(By by) { return late(null, by, null); }
-	public @Deprecated Page.Obj late(SearchContext container, By by) { return late(container, by, null); }
-	public @Deprecated Page.Obj late(By by, Page.Obj.MultiChoose multiChoose) { return late(null, by, multiChoose); }
-	public @Deprecated Page.Obj late(SearchContext container, By by, Page.Obj.MultiChoose multiChoose) {
-		Page.Obj obj = obj(container, by, multiChoose);
-		obj.late = true;
-		return obj;
-	}
+	@Deprecated public Page.Obj late(By by) { return obj(by).late(); }
+	@Deprecated public Page.Obj late(SearchContext container, By by) { return obj(by).container(container).late(); }
+	@Deprecated public Page.Obj late(By by, Page.Obj.MultiChoose multiChoose) { return obj(by).multiChoose(multiChoose).late(); }
+	@Deprecated public Page.Obj late(SearchContext container, By by, Page.Obj.MultiChoose multiChoose) { return obj(by).container(container).multiChoose(multiChoose).late(); }
 	
-	public Page.Select select(By by, Function<WebElement, List<WebElement>> choices) { return select(null, by, null, choices); }
-	public Page.Select select(SearchContext container, By by, Function<WebElement, List<WebElement>> choices) { return select(container, by, null, choices); }
-	public Page.Select select(By by, Page.Obj.MultiChoose multiChoose, Function<WebElement, List<WebElement>> choices) { return select(null, by, multiChoose, choices); }
-	public Page.Select select(SearchContext container, By by, Page.Obj.MultiChoose multiChoose, Function<WebElement, List<WebElement>> choices) { return new Page.Select((Selen.Page)this, container, by, multiChoose, choices); }
+	public Page.Select select(By by, Function<WebElement, List<WebElement>> choices) { return new Page.Select((Selen.Page)this, by, choices); }
+	@Deprecated public Page.Select select(SearchContext container, By by, Function<WebElement, List<WebElement>> choices) { return select(by, choices).container(container); }
+	@Deprecated public Page.Select select(By by, Page.Obj.MultiChoose multiChoose, Function<WebElement, List<WebElement>> choices) { return select(by, choices).multiChoose(multiChoose); }
+	@Deprecated public Page.Select select(SearchContext container, By by, Page.Obj.MultiChoose multiChoose, Function<WebElement, List<WebElement>> choices) { return select(by, choices).container(container).multiChoose(multiChoose); }
 
 }
