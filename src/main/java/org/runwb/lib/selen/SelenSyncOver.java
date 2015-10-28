@@ -20,7 +20,7 @@ public abstract class SelenSyncOver {
 		this.pub = pub;
 		this.yes = yes;
 	}
-	public boolean is() {
+	public boolean isOver() {
 		if (selen != null)
 			selen.manage().timeouts().implicitlyWait(200, TimeUnit.MILLISECONDS);
 		try {

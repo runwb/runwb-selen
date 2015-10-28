@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.lang.reflect.Constructor;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -107,7 +108,9 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 //		return (P) bindPage(pageCls);
 //		return (P) pages.get(pageCls);
 		try {
-			P p = (P) pageCls.newInstance();
+			Constructor<P> cntr = pageCls.getDeclaredConstructor();
+			cntr.setAccessible(true);
+			P p = (P) cntr.newInstance();
 //			p.driver = this;
 			p.bind(this);
 			return p;

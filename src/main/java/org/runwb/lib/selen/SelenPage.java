@@ -34,12 +34,14 @@ public abstract class SelenPage {
 		try {
 			for (Field f : getClass().getFields())
 				if (Selen.Page.Obj.class.isAssignableFrom(f.getType())) {
+					f.setAccessible(true);
 					o = (Selen.Page.Obj) f.get(this);
 					if (o != null)
 						o.name = f.getName();
 				}
 			for (Field f : getClass().getFields())
 				if (Selen.Page.Obj.class.isAssignableFrom(f.getType())) {
+					f.setAccessible(true);
 					o = (Selen.Page.Obj) f.get(this);
 					if (o != null) {
 						Obj.Late late = f.getAnnotation(Obj.Late.class);
