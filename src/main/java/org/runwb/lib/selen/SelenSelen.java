@@ -33,36 +33,34 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 	public Play play = new Play();
 	public static interface Closed { void run(); }
 	public class Timeout {
-		Deque<Integer> stack = new LinkedList<>();
-		int cur = 30;
+		Deque<Double> stack = new LinkedList<>();
+		double cur = 30;
+		{
+			reset();
+		}
+
 		public void pop() {
 			cur = stack.pop();
-			driver.manage().timeouts().implicitlyWait(cur, TimeUnit.SECONDS);
+			reset();
 		}
-		public void push(int seconds) {
+		public void push(double seconds) {
 			stack.push(cur);
 			cur = seconds;
-			driver.manage().timeouts().implicitlyWait(cur, TimeUnit.SECONDS);
+			reset();
 		}
-		public void oneoff(int seconds, Closed exec) {
-			stack.push(seconds);
-			Exception hold = null;
-			try {
-				exec.run();
-			} catch (Exception e) {
-				hold = e;
-			}
-			stack.pop();
-			if (hold != null)
-				throw new RuntimeException(hold);
+		void override(double override) {
+			driver.manage().timeouts().implicitlyWait(Math.round(override * 1000), TimeUnit.MILLISECONDS);
+		}
+		void reset() {
+			driver.manage().timeouts().implicitlyWait(Math.round(cur * 1000), TimeUnit.MILLISECONDS);
 		}
 	}
-	public Timeout timeout = new Timeout();
-	public int timeout() { return timeout.cur; }
+	public final Timeout timeout;
+	public double timeout() { return timeout.cur; }
 
 	SelenSelen(WebDriver driver) {
 		this.driver = driver;
-		this.driver.manage().timeouts().implicitlyWait(timeout.cur, TimeUnit.SECONDS);
+		timeout = new Timeout();
 	}
 	
 	public Page.Obj findElement(Integer timeout, By by) {

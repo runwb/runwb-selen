@@ -91,17 +91,30 @@ public class Selen extends SelenSelen {
 			super(cause);
 		}
 	}
-	public static interface Yes {
-		boolean yes();
-	}
 	public static class Sync extends SelenSync {
 		public Sync(Selen selen) {
 			super(selen);
+		}
+		public static interface Yes {
+			boolean yes();
 		}
 		public static class Over extends SelenSyncOver {
 			public Over(Selen selen, double intervalS, double beforeS, double afterS, boolean pub, Yes yes) {
 				super(selen, intervalS, beforeS, afterS, pub, yes);
 			}
+		}
+		public static class Reached extends SelenSyncReached {
+			public Reached(Selen selen, double intervalS, double afterS, boolean pub, Yes yes) {
+				super(selen, intervalS, afterS, pub, yes);
+			}
+		}
+	}
+	static void sleep(double timeS) {
+		long time = Math.round(timeS * 1000);
+		try {
+			Thread.sleep(time);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
 		}
 	}
 }

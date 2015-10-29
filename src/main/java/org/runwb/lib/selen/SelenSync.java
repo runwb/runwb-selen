@@ -1,29 +1,39 @@
 package org.runwb.lib.selen;
 
 import org.runwb.lib.selen.Selen.Sync.Over;
-
-import java.util.concurrent.TimeUnit;
-
-import org.runwb.lib.selen.Selen.Yes;
+import org.runwb.lib.selen.Selen.Sync.Yes;
 
 public class SelenSync {
 	final Selen selen;
 	SelenSync(Selen selen) {
 		this.selen = selen;
 	}
-	public Over over(double afterS, Yes yes) {
-		return new Over(selen, 0.2, 2, afterS, true, yes);
+	public boolean over(double afterS, Yes yes) {
+		return overSrc(afterS, yes).isOver();
 	}
-	public Over over(double beforeS, double afterS, boolean pub, Yes yes) {
-		return new Over(selen, 0.2, beforeS, afterS, pub, yes);
+	public boolean over(double beforeS, double afterS, Yes yes) {
+		return overSrc(beforeS, afterS, yes).isOver();
 	}
-	public Over over(double intervalS, double beforeS, double afterS, boolean pub, Yes yes) {
+	public Over overSrc(double afterS, Yes yes) {
+		return overSrc(0.2, 2, afterS, true, yes);
+	}
+	public Over overSrc(double beforeS, double afterS, Yes yes) {
+		return overSrc(0.2, beforeS, afterS, true, yes);
+	}
+	public Over overSrc(double intervalS, double beforeS, double afterS, boolean pub, Yes yes) {
 		return new Over(selen, intervalS, beforeS, afterS, pub, yes);
 	}
-	public boolean exists(double timeoutS, Yes yes) {
-		return exists(0.2, timeoutS, true, yes);
+	public boolean reached(double timeoutS, Yes yes) {
+		return srcReached(timeoutS, yes).isReached();
 	}
-	public boolean exists(double intervalS, double timeoutS, boolean pub, Yes yes) {
+	public Selen.Sync.Reached srcReached(double timeoutS, Yes yes) {
+		return srcReached(0.2, timeoutS, true, yes);
+	}
+	public Selen.Sync.Reached srcReached(double intervalS, double timeoutS, boolean pub, Yes yes) {
+		return new Selen.Sync.Reached(selen, intervalS, timeoutS, pub, yes);
+	}
+		
+		/*
 		selen.manage().timeouts().implicitlyWait(200, TimeUnit.MILLISECONDS);
 		
 		try {
@@ -75,5 +85,5 @@ public class SelenSync {
 		finally {
 			selen.manage().timeouts().implicitlyWait(selen.timeout(), TimeUnit.SECONDS);
 		}
-	}
+	}*/
 }

@@ -1,47 +1,45 @@
 package org.runwb.lib.selen;
 
-import java.util.concurrent.TimeUnit;
-
-import org.runwb.lib.selen.Selen.Yes;
+import org.runwb.lib.selen.Selen.Sync.Yes;
 
 public abstract class SelenSyncOver {
 	final Selen selen;
 	final Yes yes;
-	final long interval;
+	final double intervalS;
 	final long before;
 	final long after;
 	final boolean pub;
 
 	SelenSyncOver(Selen selen, double intervalS, double beforeS, double afterS, boolean pub, Yes yes) {
 		this.selen = selen;
-		this.interval = Math.round(intervalS * 1000);
+		this.intervalS = intervalS;
 		this.before = Math.round(beforeS * 1000);
 		this.after = Math.round(afterS * 1000);
 		this.pub = pub;
 		this.yes = yes;
 	}
 	public boolean isOver() {
-		if (selen != null)
-			selen.manage().timeouts().implicitlyWait(200, TimeUnit.MILLISECONDS);
 		try {
+			selen.timeout.override(0.2);
 			boolean got = false;
 			long start = System.currentTimeMillis();
 			boolean first = true;
 			long timeout = before;
 			if (pub) {
 				System.out.println("waiting to get pass \"over\" condition...");
-				StackTraceElement[] ste = Thread.currentThread().getStackTrace();
-				System.out.println(ste[2]);
+				StackTraceElement[] stes = Thread.currentThread().getStackTrace();
+				String pkgNm = getClass().getPackage().getName();
+				for (StackTraceElement ste : stes)
+					if (!ste.getClassName().startsWith(pkgNm)) {
+						System.out.println(ste);
+						break;
+					}
 			}
 			while (System.currentTimeMillis() - start <= timeout) {
 				if (first)
 					first = false;
 				else
-					try {
-						Thread.sleep(interval);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
+					Selen.sleep(intervalS);
 				boolean met = false;
 				try {
 					met = yes.yes();
@@ -67,8 +65,7 @@ public abstract class SelenSyncOver {
 			return false;
 		}
 		finally {
-			if (selen != null)
-			selen.manage().timeouts().implicitlyWait(selen.timeout(), TimeUnit.SECONDS);
+			selen.timeout.reset();
 		}
 	}
 }

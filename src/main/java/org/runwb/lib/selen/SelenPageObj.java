@@ -2,7 +2,6 @@ package org.runwb.lib.selen;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import javax.swing.JOptionPane;
 
@@ -237,7 +236,7 @@ public abstract class SelenPageObj implements WebElement, Locatable {
 		if (driver instanceof Selen)
 			selen = (Selen) driver;
 		if (selen != null)
-			selen.manage().timeouts().implicitlyWait(200, TimeUnit.MILLISECONDS);
+			selen.timeout.override(0.2);
 		
 		try {
 			long interval = Math.round(intervalS * 1000);
@@ -289,7 +288,7 @@ public abstract class SelenPageObj implements WebElement, Locatable {
 		}
 		finally {
 			if (selen != null)
-				selen.manage().timeouts().implicitlyWait(selen.timeout(), TimeUnit.SECONDS);
+				selen.timeout.reset();
 		}
 	}
 }

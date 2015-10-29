@@ -1,8 +1,6 @@
 package org.runwb.lib.selen;
 
-import java.util.concurrent.TimeUnit;
-
-import org.runwb.lib.selen.Selen.Yes;
+import org.runwb.lib.selen.Selen.Sync.Yes;
 
 public class SelenValidate {
 	final Selen selen;
@@ -15,7 +13,7 @@ public class SelenValidate {
 	}
 	public boolean is(double intervalS, double timeoutS, boolean pub, Yes yes) {
 
-		selen.manage().timeouts().implicitlyWait(200, TimeUnit.MILLISECONDS);
+		selen.timeout.override(0.2);
 		try {
 			long interval = Math.round(intervalS * 1000);
 			long timeout = Math.round(timeoutS * 1000);
@@ -63,7 +61,7 @@ public class SelenValidate {
 			return res;
 		}
 		finally {
-			selen.manage().timeouts().implicitlyWait(selen.timeout(), TimeUnit.SECONDS);
+			selen.timeout.reset();
 		}
 	}
 
