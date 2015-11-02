@@ -1,5 +1,13 @@
 package org.runwb.lib.selen;
 
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.openqa.selenium.UnhandledAlertException;
+import org.runwb.lib.selen.Selen.Page;
+import org.runwb.lib.selen.Selen.Xn;
+import org.runwb.lib.selen.Selen.Sync.Intervals;
 import org.runwb.lib.selen.Selen.Sync.Over;
 import org.runwb.lib.selen.Selen.Sync.Yes;
 
@@ -15,24 +23,67 @@ public class SelenSync {
 		return overSrc(beforeS, afterS, yes).isOver();
 	}
 	public Over overSrc(double afterS, Yes yes) {
-		return overSrc(0.2, 2, afterS, true, yes);
+		return overSrc(null, 2, afterS, true, yes);
 	}
 	public Over overSrc(double beforeS, double afterS, Yes yes) {
-		return overSrc(0.2, beforeS, afterS, true, yes);
+		return overSrc(null, beforeS, afterS, true, yes);
 	}
-	public Over overSrc(double intervalS, double beforeS, double afterS, boolean pub, Yes yes) {
-		return new Over(selen, intervalS, beforeS, afterS, pub, yes);
+	public Over overSrc(Intervals intervals, double beforeS, double afterS, boolean pub, Yes yes) {
+		return new Over(selen, intervals, beforeS, afterS, pub, yes);
 	}
 	public boolean reached(double timeoutS, Yes yes) {
-		return srcReached(timeoutS, yes).isReached();
+		return reachedSrc(timeoutS, yes).isReached();
 	}
-	public Selen.Sync.Reached srcReached(double timeoutS, Yes yes) {
-		return srcReached(0.2, timeoutS, true, yes);
+	public Selen.Sync.Reached reachedSrc(double timeoutS, Yes yes) {
+		return reachedSrc(null, timeoutS, true, yes);
 	}
-	public Selen.Sync.Reached srcReached(double intervalS, double timeoutS, boolean pub, Yes yes) {
-		return new Selen.Sync.Reached(selen, intervalS, timeoutS, pub, yes);
+	public Selen.Sync.Reached reachedSrc(Intervals intervals, double timeoutS, boolean pub, Yes yes) {
+		return new Selen.Sync.Reached(selen, intervals, timeoutS, pub, yes);
 	}
-		
+	@SafeVarargs
+	public final Page where(Class<? extends Page>...pageClss) {
+		selen.timeout.override(0.2);
+		try {
+			List<Page> theres = new ArrayList<>();
+			for (Class<? extends Page> pageCls : pageClss) {
+				Constructor<? extends Page> cntr;
+				try {
+					cntr = pageCls.getDeclaredConstructor();
+				} catch (Exception xn) {
+					throw Xn.unchecked(xn);
+				}
+				cntr.setAccessible(true);
+				try {
+					Page page = cntr.newInstance();
+					page.bind(selen, 0.2);
+					theres.add(page);
+				} catch (Selen.Xn.PageUnavailable unavail) {
+				} catch (UnhandledAlertException xnAlert) {
+					//TODO simplify
+					try {
+						throw new Selen.Xn.UnexpectedAlert(selen.switchTo().alert());
+					} catch (Exception xn) {
+						throw new Selen.Xn.UnexpectedAlert(xnAlert);
+					}
+				} catch (Exception xn) {
+					throw Xn.unchecked(xn);
+				}
+			}
+			if (theres.size() > 1) {
+				StringBuilder sb = new StringBuilder();
+				sb.append("multiple pages matching - " + theres.get(0).name);
+				for (int i=1; i<theres.size(); i++)
+					sb.append(", " + theres.get(i).name);
+				throw new Xn(sb.toString());
+			}
+			else if (theres.size() == 0)
+				return null;
+			else
+				return theres.get(0);
+		} finally {
+			selen.timeout.reset();
+		}
+	}
 		/*
 		selen.manage().timeouts().implicitlyWait(200, TimeUnit.MILLISECONDS);
 		

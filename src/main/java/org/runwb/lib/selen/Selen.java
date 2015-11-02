@@ -1,13 +1,13 @@
 package org.runwb.lib.selen;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
+import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.UnhandledAlertException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -16,19 +16,22 @@ public class Selen extends SelenSelen {
 	public final SelenValidate validate = new SelenValidate(this);
 	public static class Page extends SelenPage {
 		public static class Obj extends SelenPageObj {
-			public Obj(Page page, WebElement elem, By by) { super(page, elem, by); }
-			public Obj(Page page, By by) { super(page, by); }
-			@java.lang.annotation.Target(value = { ElementType.FIELD })
-			@Retention(value = RetentionPolicy.RUNTIME)
-			@Deprecated
-			public static @interface Late {
-				boolean is() default true;
+			Obj(Page page, WebElement elem, By by) { super(page, elem, by); }
+			Obj(Page page, By by) { super(page, by); }
+			Obj(Obj obj) { super(obj); }
+			public interface PickFromList {
+				WebElement pick(List<WebElement> elems);
 			}
 		}
 		public static class Target<P extends Page> extends Obj {
 			final Class<P> target;
-			public Target(Page page, Class<P> target, By by) {
+			/*
+			public Target(P page, Class<P> target, By by) {
 				super(page, by);
+				this.target = target;
+			}*/
+			Target(Page.Obj obj, Class<P> target) {
+				super(obj);
 				this.target = target;
 			}
 			public P go() {
@@ -90,6 +93,29 @@ public class Selen extends SelenSelen {
 		public Xn(Throwable cause) {
 			super(cause);
 		}
+		public static class UnexpectedAlert extends Xn {
+			public final Alert alert;
+			UnexpectedAlert(Alert alert) {
+				super("Modal dialog present: " + fallback("", ()-> alert.getText()));
+				this.alert = alert;
+			}
+			UnexpectedAlert(UnhandledAlertException xn) {
+				super(xn);
+				this.alert = null;
+			}
+		}
+		public static class PageUnavailable extends Xn {
+			public PageUnavailable(String msg, Exception xn) {
+				super(msg, xn);
+			}
+		}
+
+		public static RuntimeException unchecked(Exception xn) {
+			if (xn instanceof RuntimeException)
+				return (RuntimeException)xn;
+			else
+				return new RuntimeException(xn);
+		}
 	}
 	public static class Sync extends SelenSync {
 		public Sync(Selen selen) {
@@ -99,22 +125,52 @@ public class Selen extends SelenSelen {
 			boolean yes();
 		}
 		public static class Over extends SelenSyncOver {
-			public Over(Selen selen, double intervalS, double beforeS, double afterS, boolean pub, Yes yes) {
-				super(selen, intervalS, beforeS, afterS, pub, yes);
+			public Over(Selen selen, Intervals intervals, double beforeS, double afterS, boolean pub, Yes yes) {
+				super(selen, intervals, beforeS, afterS, pub, yes);
 			}
 		}
 		public static class Reached extends SelenSyncReached {
-			public Reached(Selen selen, double intervalS, double afterS, boolean pub, Yes yes) {
-				super(selen, intervalS, afterS, pub, yes);
+			public Reached(Selen selen, Intervals intervals, double afterS, boolean pub, Yes yes) {
+				super(selen, intervals, afterS, pub, yes);
+			}
+		}
+		public static class Intervals extends SelenSyncIntervals {
+
+			public Intervals() {
+				this(
+					Set.a(0, 1),
+					Set.a(125, 8),
+					Set.a(250, 8),
+					Set.a(500, 8),
+					Set.a(1000, 0)
+				);
+			}
+			public Intervals(long interval) {
+				this(
+					Set.a(0, 1),
+					Set.a(interval, 0)
+				);
+			}
+			public Intervals(Set... sets) {
+				super(sets);
 			}
 		}
 	}
 	static void sleep(double timeS) {
-		long time = Math.round(timeS * 1000);
+		sleep(Math.round(timeS * 1000));
+	}
+	static void sleep(long time) {
 		try {
 			Thread.sleep(time);
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
+		}
+	}
+	public static <O> O fallback(O fallback, Supplier<O> supplier) {
+		try {
+			return supplier.get();
+		} catch (Exception xn) {
+			return fallback;
 		}
 	}
 }

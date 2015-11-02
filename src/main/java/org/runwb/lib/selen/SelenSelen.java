@@ -12,7 +12,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoAlertPresentException;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.WebDriver;
@@ -28,9 +30,10 @@ import org.runwb.lib.selen.Selen.Page.NullObj;
 public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputDevices {
 	public WebDriver driver;
 	public final SelenSync sync = new SelenSync((Selen)this);
-//	Map<Class<? extends Page>, Page> pages = new LinkedHashMap<>();
+	public final SelenAlert alert = new SelenAlert((Selen)this);
+	public final SelenCapture capture = new SelenCapture((Selen)this);
 
-	public Play play = new Play();
+	public Playback playback = new Playback();
 	public static interface Closed { void run(); }
 	public class Timeout {
 		Deque<Double> stack = new LinkedList<>();
@@ -63,53 +66,27 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 		timeout = new Timeout();
 	}
 	
-	public Page.Obj findElement(Integer timeout, By by) {
-		if (timeout != null)
-			this.timeout.push(timeout);
-		Page.Obj obj = findElement(by);
-		if (timeout != null)
-			this.timeout.pop();
-		return obj;
+	public Page.Obj findElement(double timeoutS, By by) {
+		timeout.override(timeoutS);
+		try {
+			return findElement(by);
+		} catch (Exception xn) {
+			throw Selen.Xn.unchecked(xn);
+		} finally {
+			timeout.reset();
+		}
 	}
-/*	public void bindPage(Page p) { bindPage(p, null); }
-	@SuppressWarnings("unchecked")
-	public void bindPage(Page p, String url) {
-		p.driver = this;
-		p.bind(url);
-		Class<? extends Page> pCsl = p.getClass();
-		while (pCsl.isAnonymousClass())
-			pCsl = (Class<? extends Page>) pCsl.getSuperclass();
-		pages.put(pCsl, p);
-	}*/
 
-	@Deprecated
-	public <P extends Page> P bindPage(Class<P> pageCls) {
-		return page(pageCls);
-	}
-	@Deprecated
-	public <P extends Page> P bindPage(P p) {
-		return page(p);
-	}
-	@Deprecated
-	public <P extends Page> P bindPage(Class<P> pageCls, String url) {
-		get(url);
-		return page(pageCls);
-	}
 	public <P extends Page> P page(P p) {
 		p.bind(this);
 		return p;
 	}
 	
 	public <P extends Page> P page(Class<P> pageCls) {
-//		P p = (P) pages.get(pageCls);
-//		if (p == null)
-//		return (P) bindPage(pageCls);
-//		return (P) pages.get(pageCls);
 		try {
 			Constructor<P> cntr = pageCls.getDeclaredConstructor();
 			cntr.setAccessible(true);
 			P p = (P) cntr.newInstance();
-//			p.driver = this;
 			p.bind(this);
 			return p;
 		} catch (Exception e) {
@@ -141,10 +118,6 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 	@Override public Keyboard getKeyboard() { return ((HasInputDevices) driver).getKeyboard(); }
 	@Override public Mouse getMouse() { return ((HasInputDevices) driver).getMouse(); }
 	
-	public InputStream getScreenshot() {
-		byte[] s = ((FirefoxDriver)driver).getScreenshotAs(OutputType.BYTES);
-		return new ByteArrayInputStream(s);
-	}
 	public void capture (int timeoutS, String...strs) {
 		long timeout = timeoutS * 1000;
 		File[] files = new File[strs.length];
@@ -187,7 +160,7 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 			pws[i].close();
 		}
 	}
-	public void captureRapid (double intervalS, int times) {
+	public void captureDomRapidFire (double intervalS, int times) {
 		long interval = Math.round(intervalS * 1000);
 		for (int i=0; i<times; i++) {
 			try {
@@ -205,7 +178,7 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 		}
 	}
 	void action() {
-		if (play.paused()) {
+		if (playback.paused()) {
 			System.out.println("\"page action paused...");
 			StackTraceElement[] stes = Thread.currentThread().getStackTrace();
 			for (int i=1; i<stes.length; i++) {
@@ -215,10 +188,10 @@ public abstract class SelenSelen extends SelenWb implements WebDriver, HasInputD
 					break;
 				}
 			}
-			play.proceed();
+			playback.proceed();
 			System.out.println("\"page action continue");
 		}
 		else
-			play.proceed();
+			playback.proceed();
 	}
 }

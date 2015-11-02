@@ -18,27 +18,40 @@ import org.openqa.selenium.interactions.internal.Coordinates;
 import org.openqa.selenium.internal.Locatable;
 import org.runwb.lib.selen.Selen.Page;
 import org.runwb.lib.selen.Selen.Page.Obj;
+import org.runwb.lib.selen.Selen.Page.Obj.PickFromList;
 import org.runwb.lib.selen.Selen.Page.NullObj;
 
 public abstract class SelenPageObj implements WebElement, Locatable {
-	final WebElement elem;
-	NoSuchElementException noElemXn;
-	public String name;
-	public final Page page;
 	public final By by;
-	public MultiChoose multiChoose;
-	public SearchContext container;
-	public Boolean late = null;
-	@SuppressWarnings("unchecked")
-	public <O extends Obj> O multiChoose(MultiChoose multiChoose) { this.multiChoose = multiChoose; return (O)this; }
-	@SuppressWarnings("unchecked")
-	public <O extends Obj> O container(SearchContext container) { this.container = container; return (O)this; }
-	@SuppressWarnings("unchecked")
-	public <O extends Obj> O late() { this.late = true; return (O)this; }
+	public SearchContext inside;
+	final WebElement elem;
+	public boolean late = false;
+	public PickFromList pickFromList;
+	public String name;
+	NoSuchElementException xnNoElem;
+	public final Page page;
 
-	public NoSuchElementException noElemXn() {
+	SelenPageObj(Selen.Page.Obj copy) {
+		by = copy.by;
+		inside = copy.inside;
+		elem = copy.elem;
+		late = copy.late;
+		pickFromList = copy.pickFromList;
+		name = copy.name;
+		xnNoElem = copy.xnNoElem;
+		page = copy.page;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public <O extends Obj> O pickFromList(PickFromList pickFromList) { this.pickFromList = pickFromList; return (O)this; }
+	@SuppressWarnings("unchecked")
+	public <O extends Obj> O inside(SearchContext inside) { this.inside = inside; return (O)this; }
+	@SuppressWarnings("unchecked")
+	public <O extends Obj> O late() { late = true; return (O)this; }
+
+	public NoSuchElementException xnNoElem() {
 		elem();
-		return noElemXn;
+		return xnNoElem;
 	}
 	public WebElement elem() {
 		if (elem == null)
@@ -50,7 +63,7 @@ public abstract class SelenPageObj implements WebElement, Locatable {
 		WebDriver wd = page.driver;
 		if (wd instanceof Selen) {
 			Selen selen = (Selen) wd;
-			if (selen.play.paused()) {
+			if (selen.playback.paused()) {
 				String nm;
 				if (this.name != null)
 					nm = this.name;
@@ -60,53 +73,50 @@ public abstract class SelenPageObj implements WebElement, Locatable {
 					nm = e.toString();
 				System.out.println("\"" + nm + "\" action paused...");
 				System.out.println(Thread.currentThread().getStackTrace()[3]);
-				selen.play.proceed();
+				selen.playback.proceed();
 				System.out.println("\"" + nm + "\" action continue");
 			}
 			else
-				selen.play.proceed();
+				selen.playback.proceed();
 		}
 		return e;
 	}
-
+	
 	WebElement bind() {
 		long start = System.currentTimeMillis();
-		if (Boolean.TRUE.equals(late))
+		if (late)
 			System.out.println("Obj:" + name + " - finding... ");
 		WebElement e;
-		SearchContext container = this.container;
-		if (container == null)
-			container = page.driver;
-		if (multiChoose == null)
+		SearchContext within = this.inside;
+		if (within == null)
+			within = page.driver;
+		if (pickFromList == null)
 			try {
-				e = container.findElement(by);
+				e = within.findElement(by);
 			} catch (NoSuchElementException xn) {
 				e = new NullObj(page, xn);
 			}
 		else {
-			List<WebElement> candidates = container.findElements(by);
+			List<WebElement> candidates = within.findElements(by);
 			if (candidates.size() > 0)
-				e = multiChoose.pick(candidates);
+				e = pickFromList.pick(candidates);
 			else
-				e = new NullObj(page, null);
+				e = null;
 		}
 		if (e instanceof Page.NullObj) {
-			noElemXn = ((Page.NullObj) e).noElemXn;
+			xnNoElem = ((Page.NullObj) e).noElemXn;
 			e = null;
 		}
 //			throw ((Page.NullObj) elem).exception;
 		else if (e instanceof Page.Obj)
 			e = ((Page.Obj) e).elem;
 //		elem = e;
-		if (Boolean.TRUE.equals(late))
+		if (late)
 			if (e != null)
 				System.out.println("Obj:" + name + " - found after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
 			else
 				System.out.println("Obj:" + name + " - not found after " + ((float)(System.currentTimeMillis() - start) / 1000) + "s");
 		return e;
-	}
-	public interface MultiChoose {
-		WebElement pick(List<WebElement> elems);
 	}
 
 	public SelenPageObj(Page page, WebElement elem, By by) {
@@ -172,24 +182,29 @@ public abstract class SelenPageObj implements WebElement, Locatable {
 		new Actions(page.driver).moveToElement(this).perform();
 	}
 	
-	@Override public Page.Obj findElement(By arg0) {
+	@Override public Page.Obj findElement(By by) {
 		try {
-			return new Obj(page, elem().findElement(arg0), arg0);
+			return new Obj(page, elem().findElement(by), by);
 		} catch (NoSuchElementException e) {
 			return new NullObj(page, e);
 		}
 	}
-	public Page.Obj findElement(Integer timeout, By arg0) {
+	public Page.Obj findElement(double timeoutS, By by) {
 		WebDriver driver = page.driver;
 		Selen selen = null;
 		if (driver instanceof Selen)
 			selen = (Selen) driver;
-		if (timeout != null && selen != null)
-			selen.timeout.push(timeout);
-		Page.Obj obj = findElement(arg0);
-		if (timeout != null && selen != null)
-			selen.timeout.pop();
-		return obj;
+		if (selen != null)
+			selen.timeout.override(timeoutS);
+		try {
+			return findElement(by);
+		} catch (Exception xn) {
+			throw Selen.Xn.unchecked(xn);
+		}
+		finally {
+			if (selen != null)
+				selen.timeout.reset();
+		}
 	}
 
 	@Override public List<WebElement> findElements(By arg0) {
@@ -224,9 +239,6 @@ public abstract class SelenPageObj implements WebElement, Locatable {
 			sb.append("by: " + by + "; ");
 		return sb.toString();
 	}
-/*	public <P extends Page> P go() {
-		throw new UnsupportedOperationException();
-	}*/
 	public boolean exists(double timeoutS) {
 		return exists(0.2, timeoutS, true);
 	}
@@ -290,5 +302,8 @@ public abstract class SelenPageObj implements WebElement, Locatable {
 			if (selen != null)
 				selen.timeout.reset();
 		}
+	}
+	public <P extends Page> Selen.Page.Target<P> target(Class<P> pcls) {
+		return new Selen.Page.Target<>((Selen.Page.Obj)this, pcls);
 	}
 }

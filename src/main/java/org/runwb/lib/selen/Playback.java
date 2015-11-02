@@ -25,10 +25,10 @@ import javax.swing.WindowConstants;
 import org.apache.commons.io.FileUtils;
 
 @SuppressWarnings("serial")
-public class Play extends JPanel {
+public class Playback extends JPanel {
 
 	public static void main(String[] args) {
-		Play p = new Play();
+		Playback p = new Playback();
 		p.standalone();
 	}
 
@@ -43,7 +43,7 @@ public class Play extends JPanel {
 	JButton kill = new JButton(KILL);
 	Thread daemon = new Thread(){
 		{
-			setName(Play.class.getSimpleName() + " daemon thread");
+			setName(Playback.class.getSimpleName() + " daemon thread");
 		}
 		public void run() {
 			synchronized (in) {
