@@ -21,18 +21,20 @@ public abstract class SelenSyncReached {
 		this.yes = yes;
 	}
 	public boolean isReached() {
+		selen.timeout.override(0.2);
 		try {
-			selen.timeout.override(0.2);
 			long start = System.currentTimeMillis();
 			if (pub) {
 				System.out.println("check reached...");
 				StackTraceElement[] stes = Thread.currentThread().getStackTrace();
 				String pkgNm = getClass().getPackage().getName();
-				for (StackTraceElement ste : stes)
+				for (int i=1; i<stes.length; i++) {
+					StackTraceElement ste = stes[i];
 					if (!ste.getClassName().startsWith(pkgNm)) {
 						System.out.println(ste);
 						break;
 					}
+				}
 			}
 			int times = 0;
 			boolean res = false;
